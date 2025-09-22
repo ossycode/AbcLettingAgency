@@ -1,0 +1,6 @@
+@AbcLettingAgency_HostAddress = http://localhost:5171
+
+GET {{AbcLettingAgency_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
