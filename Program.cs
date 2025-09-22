@@ -41,7 +41,7 @@ builder.Services.Scan(s => s
 );
 
 var allowedOrigins = builder.Configuration
-    .GetSection("CORS:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+    .GetSection("CORS:AllowedOrigins").Get<string[]>() ?? ["https://abc-letting-agency.vercel.app", "http://localhost:3000"];
 
 
 //builder.Services.AddCors(options =>
@@ -61,15 +61,24 @@ builder.Services.AddCors(o =>
 {
     o.AddPolicy("frontend", p =>
     {
-        if (allowedOrigins.Length > 0) p.WithOrigins(allowedOrigins);
-        else p.AllowAnyOrigin(); // DEV ONLY
-
-        p.AllowAnyHeader()
-         .AllowAnyMethod()
-         .AllowCredentials();     // <- cookies across origins
+        if (allowedOrigins.Length > 0)
+        {
+            // Credentials allowed ONLY with explicit origins
+            p.WithOrigins(allowedOrigins)
+             .AllowAnyHeader()
+             .AllowAnyMethod()
+             .AllowCredentials();
+        }
+        else
+        {
+            // Dev fallback: no credentials if you truly allow any origin
+            p.AllowAnyOrigin()
+             .AllowAnyHeader()
+             .AllowAnyMethod();
+            // NOTE: Do NOT call .AllowCredentials() here.
+        }
     });
 });
-
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.RegisterSwagger();
