@@ -122,9 +122,9 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
                 Expires = expiresUtc,    
                 HttpOnly = true,
                 IsEssential = true,
-                SameSite = sameSite,
-                Secure = secure,        
-                Path = _options.Path,
+                SameSite = SameSiteMode.None,
+                Secure = true,        
+                Path = "/",
             };
 
             httpContext.Response.Cookies.Append(cookieName, token, opt);

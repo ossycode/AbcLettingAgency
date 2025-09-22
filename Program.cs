@@ -57,27 +57,12 @@ var allowedOrigins = builder.Configuration
 //    });
 //});
 
-builder.Services.AddCors(o =>
-{
-    o.AddPolicy("frontend", p =>
-    {
-        if (allowedOrigins.Length > 0)
-        {
-            // Credentials allowed ONLY with explicit origins
-            p.WithOrigins(allowedOrigins)
-             .AllowAnyHeader()
-             .AllowAnyMethod()
-             .AllowCredentials();
-        }
-        else
-        {
-            // Dev fallback: no credentials if you truly allow any origin
-            p.AllowAnyOrigin()
-             .AllowAnyHeader()
-             .AllowAnyMethod();
-            // NOTE: Do NOT call .AllowCredentials() here.
-        }
-    });
+builder.Services.AddCors(o => {
+    o.AddPolicy("frontend", p => p
+      .WithOrigins("https://abc-letting-agency.vercel.app", "http://localhost:3000")
+      .AllowAnyHeader()
+      .AllowAnyMethod()
+      .AllowCredentials());
 });
 
 builder.Services.AddHttpContextAccessor();
