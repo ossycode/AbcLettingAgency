@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AbcLettingAgency.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController(IAuthService accountService) : BaseController
 {
     private readonly IAuthService _accountService = accountService;

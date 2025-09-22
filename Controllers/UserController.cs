@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AbcLettingAgency.Controllers;
 
 [Authorize]
-[Route("api/[controller]")]
+[Route("api/user")]
 public class UserController(IUserService userService) : BaseController
 {
     private readonly IUserService _userService = userService;

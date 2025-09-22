@@ -12,6 +12,7 @@ using System.Linq.Expressions;
 namespace AbcLettingAgency.Features.Landlords.Controllers;
 
 [HasPermission(AppFeature.Entity, AppAction.Read)]
+[Route("api/landlord")]
 public class LandlordController(
     IEntityServiceFactory factory,
     ILandlordService landlordService)

@@ -8,6 +8,7 @@ using AbcLettingAgency.Shared.Attributes;
 using AbcLettingAgency.Shared.Exceptions;
 using AbcLettingAgency.Shared.Infrastructure;
 using AbcLettingAgency.Shared.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,17 +40,33 @@ builder.Services.Scan(s => s
     .WithScopedLifetime()
 );
 
+var allowedOrigins = builder.Configuration
+    .GetSection("CORS:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 
-builder.Services.AddCors(options =>
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("LettingAgency", policy =>
+//    {
+//        policy
+//              .AllowAnyMethod()
+//              .AllowAnyHeader()
+//              .AllowCredentials()
+//              .SetIsOriginAllowed(host => true);
+
+//    });
+//});
+
+builder.Services.AddCors(o =>
 {
-    options.AddPolicy("LettingAgency", policy =>
+    o.AddPolicy("frontend", p =>
     {
-        policy
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials()
-              .SetIsOriginAllowed(host => true);
+        if (allowedOrigins.Length > 0) p.WithOrigins(allowedOrigins);
+        else p.AllowAnyOrigin(); // DEV ONLY
 
+        p.AllowAnyHeader()
+         .AllowAnyMethod()
+         .AllowCredentials();     // <- cookies across origins
     });
 });
 
@@ -74,7 +91,18 @@ var app = builder.Build();
 
 app.SeedDatabase();
 
-app.UseCors("LettingAgency");
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+app.UseCors("frontend");
+
+app.UseCookiePolicy(new CookiePolicyOptions
+{
+    MinimumSameSitePolicy = SameSiteMode.None,   // cross-site
+    Secure = CookieSecurePolicy.Always
+});
 
 if (app.Environment.IsDevelopment())
 {
