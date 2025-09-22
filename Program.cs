@@ -74,16 +74,21 @@ var app = builder.Build();
 
 app.SeedDatabase();
 
+app.UseCors("LettingAgency");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHttpsRedirection();
 }
 
-app.UseCors("LettingAgency");
-app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapGet("/healthz", () => Results.Ok("ok"));
+
 
 app.Run();
