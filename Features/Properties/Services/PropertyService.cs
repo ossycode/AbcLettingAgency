@@ -1,182 +1,92 @@
 ﻿using AbcLettingAgency.EntityModel;
+using AbcLettingAgency.Enums;
 using AbcLettingAgency.Features.Properties.Interface;
 using AbcLettingAgency.Shared.Abstractions;
+using AbcLettingAgency.Shared.Exceptions;
 using AbcLettingAgency.Shared.Services;
+using AbcLettingAgency.Shared.Utilities;
+using Microsoft.EntityFrameworkCore;
 using static System.ArgumentNullException;
 
 namespace AbcLettingAgency.Features.Properties.Services;
 
 
-public class PropertyService(IEntityServiceDependencies deps)
+public class PropertyService(IEntityServiceDependencies deps, FriendlyCodeGenerator codeGenerator, IEntityServiceFactory entityService)
         : BaseEntityService<Property>(deps), IPropertyService
 {
+    private readonly FriendlyCodeGenerator _codeGenerator = codeGenerator;
+    private readonly IEntityServiceFactory _entityService = entityService;
 
-    // availability = AvailableFrom <= today AND no active tenancy
-    private static bool IsAvailableCore(DateTime? availableFrom, bool hasActiveTenancy)
-        => (!availableFrom.HasValue || availableFrom.Value.Date <= DateTime.UtcNow.Date) && !hasActiveTenancy;
-
- 
-    public async Task<Property> CreateAsync(CreatePropertyDto dto, CancellationToken ct)
+    public async Task<Result> CreateAsync(CreatePropertyRequest req, CancellationToken token)
     {
-        ThrowIfNull(dto);
+      
+        var landlordExisit = await _entityService.For<Landlord>().GetByIdAsync(req.LandlordId, token);
 
-        // Code uniqueness is already enforced by index
+        if (landlordExisit is null) return Result.Failure(PropertyErrors.LandlordNotFound(req.LandlordId));
+
+
+        var code = await _codeGenerator.GenerateForPropertyAsync(
+            req.Code, req.AddressLine1, req.City, token);
+
         var entity = new Property
         {
             Id = Guid.NewGuid().ToString(),
-            Code = dto.Code?.Trim(),
-            AddressLine1 = dto.AddressLine1,
-            AddressLine2 = dto.AddressLine2,
-            City = dto.City,
-            Postcode = dto.Postcode,
-            Bedrooms = dto.Bedrooms,
-            Bathrooms = dto.Bathrooms,
-            Furnished = dto.Furnished,
-            AvailableFrom = dto.AvailableFrom,
-            LandlordId = dto.LandlordId,
+            Code = code,
+            AddressLine1 = req.AddressLine1,
+            AddressLine2 = req.AddressLine2,
+            City = req.City,
+            Postcode = req.Postcode,
+            Bedrooms = req.Bedrooms,
+            Bathrooms = req.Bathrooms,
+            Furnished = req.Furnished,
+            AvailableFrom = req.AvailableFrom,
+            LandlordId = req.LandlordId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        await CreateAsync(entity, ct);
+        await CreateAsync(entity, token);
 
-        return entity;
+        return Result.Success();
     }
 
-    public async Task UpdateAsync(string id, UpdatePropertyDto dto, CancellationToken ct)
+    public async Task<Result> DeleteAsync(string id, CancellationToken token)
     {
-        ThrowIfNull(dto);
+        var entity = await _entityService.For<Property>().GetByIdAsync(id, token);
 
-        var entity = await GetByIdAsync(id);
+        if (entity is null) return Result.Failure(PropertyErrors.NotFound(id));
 
-        if (entity is null) throw new KeyNotFoundException("Property not found");
+        var hasActiveTenancy = await _entityService.For<Tenancy>()
+         .GetAll()
+         .Where(t => t.PropertyId == id && t.Status == TenancyStatus.ACTIVE)
+         .FirstOrDefaultAsync(token);
 
-        entity.Code = dto.Code ?? entity.Code;
-        entity.AddressLine1 = dto.AddressLine1 ?? entity.AddressLine1;
-        entity.AddressLine2 = dto.AddressLine2 ?? entity.AddressLine2;
-        entity.City = dto.City ?? entity.City;
-        entity.Postcode = dto.Postcode ?? entity.Postcode;
-        entity.Bedrooms = dto.Bedrooms ?? entity.Bedrooms;
-        entity.Bathrooms = dto.Bathrooms ?? entity.Bathrooms;
-        entity.Furnished = dto.Furnished ?? entity.Furnished;
-        entity.AvailableFrom = dto.AvailableFrom ?? entity.AvailableFrom;
-        entity.LandlordId = dto.LandlordId ?? entity.LandlordId;
-        entity.UpdatedAt = DateTime.UtcNow;
+        if (hasActiveTenancy is not null) return Result.Failure(PropertyErrors.HasLinkedEntities());
 
-        await UpdateAsync(entity, ct);
+        await DeleteAsync(entity, token);
+
+        return Result.Success();
     }
 
-    public async Task DeleteAsync(string id, CancellationToken ct)
+    public async Task<Result> UpdateAsync(string id, UpdatePropertyRequest req, CancellationToken token)
     {
-        var entity = await GetByIdAsync(id, ct);
-        if (entity is null) return;
+       var entity =  await _entityService.For<Property>().GetByIdAsync(id, token);
 
-       await DeleteAsync(entity, ct);
+        if (entity is null) return Result.Failure(PropertyErrors.NotFound(id));
+
+        entity.AddressLine1 = req.AddressLine1.Trim();
+        entity.AddressLine2 = req.AddressLine2?.Trim();
+        entity.City = req.City?.Trim();
+        entity.Postcode = req.Postcode?.Trim();
+        entity.Bedrooms = req.Bedrooms;
+        entity.Bathrooms = req.Bathrooms;
+        entity.Furnished = req.Furnished;
+        entity.AvailableFrom = req.AvailableFrom;
+        entity.LandlordId = req.LandlordId;
+
+        await UpdateAsync(entity, token);
+
+        return Result.Success();
+
     }
-
-    public Task<string> AddMaintenanceAsync(string propertyId, CreateMaintenanceDto dto, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<IReadOnlyList<PropertyMaintenanceDto>> GetMaintenanceAsync(string propertyId, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<string> AddTenancyAsync(string propertyId, CreateTenancyDto dto, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<IReadOnlyList<PropertyTenancyDto>> GetTenanciesAsync(string propertyId, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-
-        //await ChangeScope.BatchAsync(async () =>
-        //{
-
-        //});
-    }
-
-    //public async Task<string> AddMaintenanceAsync(string propertyId, CreateMaintenanceDto dto, CancellationToken ct)
-    //{
-    //    // verify property exists
-    //    var exists = await _db.Properties.AnyAsync(p => p.Id == propertyId, ct);
-    //    if (!exists) throw new KeyNotFoundException("Property not found");
-
-    //    var m = new MaintenanceJob
-    //    {
-    //        Id = Guid.NewGuid().ToString(),
-    //        PropertyId = propertyId,
-    //        Title = dto.Title,
-    //        Details = dto.Details,
-    //        Status = dto.Status ?? 0,
-    //        OpenedAt = dto.OpenedAt ?? DateTime.UtcNow,
-    //        ClosedAt = dto.ClosedAt,
-    //        Cost = dto.Cost,
-    //        InvoiceId = dto.InvoiceId,
-    //        CreatedAt = DateTime.UtcNow,
-    //        UpdatedAt = DateTime.UtcNow
-    //    };
-
-    //    _db.MaintenanceJobs.Add(m);
-    //    await _db.SaveChangesAsync(ct);
-    //    return m.Id;
-    //}
-
-    //public async Task<IReadOnlyList<PropertyMaintenanceDto>> GetMaintenanceAsync(string propertyId, CancellationToken ct)
-    //{
-    //    return await _db.MaintenanceJobs.AsNoTracking()
-    //        .Where(m => m.PropertyId == propertyId)
-    //        .OrderByDescending(m => m.OpenedAt)
-    //        .Select(m => new PropertyMaintenanceDto(
-    //            m.Id, m.Title, m.Details, m.Status, m.OpenedAt, m.ClosedAt, m.Cost, m.InvoiceId))
-    //        .ToListAsync(ct);
-    //}
-
-    //public async Task<string> AddTenancyAsync(string propertyId, CreateTenancyDto dto, CancellationToken ct)
-    //{
-    //    var exists = await _db.Properties.AnyAsync(p => p.Id == propertyId, ct);
-    //    if (!exists) throw new KeyNotFoundException("Property not found");
-
-    //    // find landlord from property
-    //    var landlordId = await _db.Properties.Where(p => p.Id == propertyId)
-    //        .Select(p => p.LandlordId)
-    //        .FirstAsync(ct);
-
-    //    var t = new Tenancy
-    //    {
-    //        Id = Guid.NewGuid().ToString(),
-    //        PropertyId = propertyId,
-    //        LandlordId = landlordId,
-    //        TenantId = dto.TenantId,
-    //        Status = dto.Status,
-    //        StartDate = dto.StartDate,
-    //        EndDate = dto.EndDate,
-    //        RentAmount = dto.RentAmount,
-    //        RentDueDay = dto.RentDueDay,
-    //        CommissionPercent = dto.CommissionPercent,
-    //        DepositAmount = dto.DepositAmount,
-    //        Notes = dto.Notes,
-    //        CreatedAt = DateTime.UtcNow,
-    //        UpdatedAt = DateTime.UtcNow
-    //    };
-
-    //    _db.Tenancies.Add(t);
-    //    await _db.SaveChangesAsync(ct);
-    //    return t.Id;
-    //}
-
-    //public async Task<IReadOnlyList<PropertyTenancyDto>> GetTenanciesAsync(string propertyId, CancellationToken ct)
-    //{
-    //    return await _db.Tenancies.AsNoTracking()
-    //        .Include(t => t.Tenant)
-    //        .Where(t => t.PropertyId == propertyId)
-    //        .OrderByDescending(t => t.StartDate ?? DateTime.MinValue)
-    //        .Select(t => new PropertyTenancyDto(
-    //            t.Id, t.TenantId, (t.Tenant.FirstName + " " + t.Tenant.LastName).Trim(),
-    //            t.Status, t.StartDate, t.EndDate, t.RentAmount))
-    //        .ToListAsync(ct);
-    //}
 }

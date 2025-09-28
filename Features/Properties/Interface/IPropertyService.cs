@@ -1,19 +1,14 @@
-﻿using AbcLettingAgency.Shared;
-using AbcLettingAgency.Shared.Abstractions;
+﻿using AbcLettingAgency.Shared.Abstractions;
 using AbcLettingAgency.EntityModel;
 using AbcLettingAgency.Shared.Attributes;
+using AbcLettingAgency.Shared.Exceptions;
 
 namespace AbcLettingAgency.Features.Properties.Interface;
 
 [AutoRegisterService]
-public interface IPropertyService 
+public interface IPropertyService : IEntityService<Property>
 {
-    Task<Property> CreateAsync(CreatePropertyDto dto, CancellationToken ct);
-    Task UpdateAsync(string id, UpdatePropertyDto dto, CancellationToken ct);
-
-    Task<string> AddMaintenanceAsync(string propertyId, CreateMaintenanceDto dto, CancellationToken ct);
-    Task<IReadOnlyList<PropertyMaintenanceDto>> GetMaintenanceAsync(string propertyId, CancellationToken ct);
-
-    Task<string> AddTenancyAsync(string propertyId, CreateTenancyDto dto, CancellationToken ct);
-    Task<IReadOnlyList<PropertyTenancyDto>> GetTenanciesAsync(string propertyId, CancellationToken ct);
+    Task<Result> CreateAsync(CreatePropertyRequest req, CancellationToken token);
+    Task<Result> UpdateAsync(string id, UpdatePropertyRequest req, CancellationToken token);
+    Task<Result> DeleteAsync(string id, CancellationToken token);
 }

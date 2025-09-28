@@ -8,6 +8,7 @@ using AbcLettingAgency.Shared.Attributes;
 using AbcLettingAgency.Shared.Exceptions;
 using AbcLettingAgency.Shared.Infrastructure;
 using AbcLettingAgency.Shared.Services;
+using AbcLettingAgency.Shared.Utilities;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ builder.Services.AddScoped<IEntityServiceFactory, EntityServiceFactory>();
 builder.Services.AddScoped<IEntityServiceDependencies, EntityServiceDependencies>();
 
 builder.Services.AddScoped(typeof(IEntityService<>), typeof(GenericEntityService<>));
+builder.Services.AddScoped<FriendlyCodeGenerator>();
 
 builder.Services.Scan(s => s
     .FromApplicationDependencies(a =>
@@ -40,30 +42,30 @@ builder.Services.Scan(s => s
     .WithScopedLifetime()
 );
 
-var allowedOrigins = builder.Configuration
-    .GetSection("CORS:AllowedOrigins").Get<string[]>() ?? ["https://abc-letting-agency.vercel.app", "http://localhost:3000"];
+//var allowedOrigins = builder.Configuration
+//    .GetSection("CORS:AllowedOrigins").Get<string[]>() ?? ["https://abc-letting-agency.vercel.app", "http://localhost:3000"];
 
 
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("LettingAgency", policy =>
-//    {
-//        policy
-//              .AllowAnyMethod()
-//              .AllowAnyHeader()
-//              .AllowCredentials()
-//              .SetIsOriginAllowed(host => true);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("LettingAgency", policy =>
+    {
+        policy
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials()
+              .SetIsOriginAllowed(host => true);
 
-//    });
-//});
-
-builder.Services.AddCors(o => {
-    o.AddPolicy("frontend", p => p
-      .WithOrigins("https://abc-letting-agency.vercel.app", "http://localhost:3000")
-      .AllowAnyHeader()
-      .AllowAnyMethod()
-      .AllowCredentials());
+    });
 });
+
+//builder.Services.AddCors(o => {
+//    o.AddPolicy("frontend", p => p
+//      .WithOrigins("https://abc-letting-agency.vercel.app", "http://localhost:3000")
+//      .AllowAnyHeader()
+//      .AllowAnyMethod()
+//      .AllowCredentials());
+//});
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.RegisterSwagger();
@@ -90,13 +92,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-app.UseCors("frontend");
-
-app.UseCookiePolicy(new CookiePolicyOptions
-{
-    MinimumSameSitePolicy = SameSiteMode.None,   // cross-site
-    Secure = CookieSecurePolicy.Always
-});
+app.UseCors("LettingAgency");
 
 if (app.Environment.IsDevelopment())
 {

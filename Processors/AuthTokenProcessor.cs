@@ -2,11 +2,16 @@
 using AbcLettingAgency.Authorization;
 using AbcLettingAgency.EntityModel;
 using AbcLettingAgency.Options;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
+using System.Reflection.PortableExecutable;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -97,34 +102,42 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
         return Convert.ToBase64String(randomNumber);
     }
 
+   
     public void WriteAuthTokenAsHttpOnlyCookie(string cookieName, string token, DateTime expiresUtc)
     {
         var httpContext = _httpContextAccessor.HttpContext
             ?? throw new InvalidOperationException("No HttpContext available.");
 
-        var sameSite = _options.SameSiteOverride
-            ?? (_options.CrossSite ? SameSiteMode.None : SameSiteMode.Lax);
+        ResolveCookiePolicy(httpContext, out var sameSite, out var secure, out var domain, out var path);
 
-        var secure = _options.SecureOverride
-            ?? (_env.IsProduction() || _options.CrossSite);
+        if (sameSite == SameSiteMode.None && !secure)
+        {
+            if (_env.IsDevelopment())
+            {
+                secure = true; 
+            }
+            else
+            {
+                throw new InvalidOperationException("SameSite=None requires Secure=true.");
+            }
+        }
 
-        // Idempotency flag so we don’t append multiple Set-Cookie headers for the same cookie
         var flagKey = $"cookie_written:{cookieName}";
-        if (httpContext.Items.ContainsKey(flagKey))
-            return;
-
+        if (httpContext.Items.ContainsKey(flagKey)) return;
         httpContext.Items[flagKey] = true;
 
         httpContext.Response.OnStarting(() =>
         {
             var opt = new CookieOptions
             {
-                Expires = expiresUtc,    
+                // Prefer DateTimeOffset or MaxAge
+                Expires = new DateTimeOffset(expiresUtc, TimeSpan.Zero),
                 HttpOnly = true,
                 IsEssential = true,
-                SameSite = SameSiteMode.None,
-                Secure = true,        
-                Path = "/",
+                SameSite = sameSite,
+                Secure = secure,
+                Path = path,
+                Domain = domain
             };
 
             httpContext.Response.Cookies.Append(cookieName, token, opt);
@@ -132,22 +145,49 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
         });
     }
 
-    public void ClearAuthCookie(string name)
+    public void ClearAuthCookie(string cookieName)
     {
-        var sameSite = _options.SameSiteOverride
-            ?? (_options.CrossSite ? SameSiteMode.None : SameSiteMode.Lax);
-        var secure = _options.SecureOverride
-            ?? (_env.IsProduction() || _options.CrossSite);
+        var ctx = _httpContextAccessor.HttpContext
+            ?? throw new InvalidOperationException("No HttpContext available.");
 
-        _httpContextAccessor.HttpContext!.Response.Cookies.Append(name, "",
-            new CookieOptions
-            {
-                Expires = DateTime.UnixEpoch,
-                HttpOnly = true,
-                IsEssential = true,
-                SameSite = sameSite,
-                Secure = secure,
-                Path = _options.Path,
-            });
+        // Use the *same policy values* as when setting the cookie
+        ResolveCookiePolicy(ctx, out var sameSite, out var secure, out var domain, out var path);
+
+        var opt = new CookieOptions
+        {
+            Expires = DateTimeOffset.UnixEpoch,
+            HttpOnly = true,
+            IsEssential = true,
+            SameSite = sameSite,
+            Secure = secure,
+            Path = path,
+            Domain = domain
+        };
+
+        ctx.Response.Cookies.Append(cookieName, string.Empty, opt);
+        ctx.Response.Cookies.Delete(cookieName, opt);
+    }
+
+    private void ResolveCookiePolicy(
+        HttpContext ctx,
+        out SameSiteMode sameSite,
+        out bool secure,
+        out string? domain,
+        out string path)
+    {
+        sameSite = _options.SameSiteOverride
+                   ?? (_options.CrossSite ? SameSiteMode.None : SameSiteMode.Lax);
+
+        secure = _options.SecureOverride
+                 ?? (_env.IsProduction() || _options.CrossSite);
+
+        domain = _options.Domain; // e.g. ".abclettingagency.com" for subdomain sharing
+        path = string.IsNullOrWhiteSpace(_options.Path) ? "/" : _options.Path;
+
+        if (_env.IsDevelopment() && _options.CrossSite && !ctx.Request.IsHttps)
+        {
+            // log warn: Cross-site auth cookies require HTTPS (Chrome)
+            Console.WriteLine(" Cross-site auth cookies require HTTPS (Chrome)");
+        }
     }
 }

@@ -4,7 +4,8 @@ namespace AbcLettingAgency.Shared.Abstractions;
 
 public interface IEntityReadService<TEntity> where TEntity : IEntityBase
 {
-    IQueryable<TEntity> GetAll(bool readOnly = true);   
+    IQueryable<TEntity> GetAll(bool readOnly = true);
+
     Task<TEntity?> GetByIdAsync(string id, CancellationToken ct = default);
     Task<TResult?> GetByIdAsync<TResult>(string id,
         Expression<Func<TEntity, TResult>> selector,

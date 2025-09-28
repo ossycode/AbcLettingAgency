@@ -14,7 +14,10 @@ public class UserController(IUserService userService) : BaseController
 
     [HttpGet]
     public async Task<IActionResult> GetMe(CancellationToken ct)
-    => FromResult(await _userService.GetMeAsync(User, ct));
+    {
+        var result = await _userService.GetMeAsync(User, ct);
+        return FromResult(result);
+    }
 
     [HttpPatch]
     public async Task<IActionResult> UpdateMe([FromBody] UpdateMeRequest req, CancellationToken ct)

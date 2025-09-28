@@ -59,11 +59,11 @@ public static class AuthenticationExtensions
                 {
                     OnMessageReceived = context =>
                     {
-                        var auth = context.Request.Headers["Authorization"].ToString();
-                        if (!string.IsNullOrEmpty(auth) && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return Task.CompletedTask;
-                        }
+                        //var auth = context.Request.Headers["Authorization"].ToString();
+                        //if (!string.IsNullOrEmpty(auth) && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        //{
+                        //    return Task.CompletedTask;
+                        //}
 
                         var token = context.Request.Cookies["ACCESS_TOKEN"];
                         if (!string.IsNullOrEmpty(token))
