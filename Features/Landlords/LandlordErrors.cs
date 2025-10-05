@@ -4,8 +4,8 @@ namespace AbcLettingAgency.Features.Landlords;
 
 public static class LandlordErrors
 {
-    public static AppError NotFound(string? id = null)
-        => new("Landlord.NotFound", "Landlord not found.", ErrorType.NotFound, key: id);
+    public static AppError NotFound(long? id = null)
+        => new("Landlord.NotFound", "Landlord not found.", ErrorType.NotFound, key: id.ToString());
 
     public static AppError EmailAlreadyExists(string email)
         => new("Landlord.EmailAlreadyExists", $"A landlord with email '{email}' already exists.", ErrorType.Conflict, key: "email");

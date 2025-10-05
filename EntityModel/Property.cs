@@ -3,27 +3,31 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AbcLettingAgency.EntityModel;
 
-public class Property : EntityBase
+public class Property : EntityBase, IAgencyOwned
 {
     [MaxLength(50)]
-    public string? Code { get; set; } // unique friendly code
+    public string Code { get; set; }  = string.Empty;
+
+    public long AgencyId { get; set; }
 
     [MaxLength(200)]
     public string AddressLine1 { get; set; } = default!;
     [MaxLength(200)]
     public string? AddressLine2 { get; set; }
     [MaxLength(120)]
-    public string? City { get; set; }
-    [MaxLength(20)]
-    public string? Postcode { get; set; }
+    public string City { get; set; } = string.Empty;
 
-    public int? Bedrooms { get; set; }
-    public int? Bathrooms { get; set; }
+    [MaxLength(20)]
+    public string Postcode { get; set; } = string.Empty;
+
+    public int Bedrooms { get; set; }
+    public int Bathrooms { get; set; }
     public bool? Furnished { get; set; }
     public DateTime? AvailableFrom { get; set; }
 
-    // FK
-    public string LandlordId { get; set; } = default!;
+    public string? Notes { get; set; }
+
+    public long LandlordId { get; set; } = default!;
     public Landlord Landlord { get; set; } = default!;
 
     public List<Tenancy> Tenancies { get; set; } = new();

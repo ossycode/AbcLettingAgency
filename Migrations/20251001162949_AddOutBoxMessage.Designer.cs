@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AbcLettingAgency.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250916182601_initialMigration")]
-    partial class initialMigration
+    [Migration("20251001162949_AddOutBoxMessage")]
+    partial class AddOutBoxMessage
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -102,6 +102,12 @@ namespace AbcLettingAgency.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -114,16 +120,23 @@ namespace AbcLettingAgency.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex");
 
+                    b.HasIndex("RefreshToken")
+                        .IsUnique();
+
                     b.ToTable("AspNetUsers", "public");
                 });
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.ClientLedger", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -134,23 +147,29 @@ namespace AbcLettingAgency.Migrations
                     b.Property<int>("EntryType")
                         .HasColumnType("integer");
 
-                    b.Property<string>("LandlordId")
-                        .HasColumnType("text");
+                    b.Property<long?>("LandlordId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("OccurredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("PropertyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("PropertyId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("TenancyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenancyId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("TenantId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -162,19 +181,22 @@ namespace AbcLettingAgency.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("ClientLedger", "public");
+                    b.ToTable("ClientLedgers", "public");
                 });
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Document", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("InvoiceId")
-                        .HasColumnType("text");
+                    b.Property<long?>("InvoiceId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("MimeType")
                         .HasMaxLength(150)
@@ -185,14 +207,14 @@ namespace AbcLettingAgency.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("PropertyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("PropertyId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("TenancyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenancyId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("TenantId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -205,6 +227,12 @@ namespace AbcLettingAgency.Migrations
                         .HasMaxLength(600)
                         .HasColumnType("character varying(600)");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InvoiceId");
@@ -215,13 +243,18 @@ namespace AbcLettingAgency.Migrations
 
                     b.HasIndex("TenantId");
 
+                    b.HasIndex("UploadedAt");
+
                     b.ToTable("Documents", "public");
                 });
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Invoice", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -233,22 +266,24 @@ namespace AbcLettingAgency.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("GrossAmount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<DateTime>("IssueDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("LandlordId")
-                        .HasColumnType("text");
+                    b.Property<long?>("LandlordId")
+                        .HasColumnType("bigint");
 
                     b.Property<decimal>("NetAmount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("PropertyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("PropertyId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Reference")
                         .HasMaxLength(120)
@@ -257,19 +292,26 @@ namespace AbcLettingAgency.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<string>("TenancyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenancyId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("VatAmount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<string>("VendorName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -284,8 +326,11 @@ namespace AbcLettingAgency.Migrations
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Landlord", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Address")
                         .HasMaxLength(400)
@@ -321,6 +366,12 @@ namespace AbcLettingAgency.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.ToTable("Landlords", "public");
@@ -328,14 +379,18 @@ namespace AbcLettingAgency.Migrations
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.MaintenanceJob", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("Cost")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -343,15 +398,14 @@ namespace AbcLettingAgency.Migrations
                     b.Property<string>("Details")
                         .HasColumnType("text");
 
-                    b.Property<string>("InvoiceId")
-                        .HasColumnType("text");
+                    b.Property<long?>("InvoiceId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("OpenedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("PropertyId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long>("PropertyId")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -364,6 +418,12 @@ namespace AbcLettingAgency.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InvoiceId");
@@ -375,8 +435,11 @@ namespace AbcLettingAgency.Migrations
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Property", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("AddressLine1")
                         .IsRequired()
@@ -390,17 +453,19 @@ namespace AbcLettingAgency.Migrations
                     b.Property<DateTime?>("AvailableFrom")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("Bathrooms")
+                    b.Property<int>("Bathrooms")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Bedrooms")
+                    b.Property<int>("Bedrooms")
                         .HasColumnType("integer");
 
                     b.Property<string>("City")
+                        .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
                     b.Property<string>("Code")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
@@ -410,16 +475,25 @@ namespace AbcLettingAgency.Migrations
                     b.Property<bool?>("Furnished")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("LandlordId")
-                        .IsRequired()
+                    b.Property<long>("LandlordId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Notes")
                         .HasColumnType("text");
 
                     b.Property<string>("Postcode")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -433,23 +507,33 @@ namespace AbcLettingAgency.Migrations
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.RentCharge", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<decimal?>("AmountAfterCommission")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<decimal?>("CommissionDue")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
 
                     b.Property<DateTime>("PeriodEnd")
                         .HasColumnType("timestamp with time zone");
@@ -460,14 +544,21 @@ namespace AbcLettingAgency.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<string>("TenancyId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long>("TenancyId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TenancyId");
 
                     b.HasIndex("TenancyId", "DueDate", "Status");
 
@@ -476,14 +567,18 @@ namespace AbcLettingAgency.Migrations
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.RentReceipt", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
-                    b.Property<string>("ChargeId")
-                        .HasColumnType("text");
+                    b.Property<long?>("ChargeId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -502,16 +597,25 @@ namespace AbcLettingAgency.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
-                    b.Property<string>("TenancyId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long>("TenancyId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChargeId");
+
+                    b.HasIndex("ReceivedAt");
+
+                    b.HasIndex("TenancyId");
 
                     b.HasIndex("TenancyId", "ReceivedAt");
 
@@ -520,23 +624,25 @@ namespace AbcLettingAgency.Migrations
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Tenancy", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime?>("CheckInDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("CommissionPercent")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<decimal?>("CommissionPercentTo15")
-                        .HasColumnType("decimal(5,2)");
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal?>("DepositAmount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
                     b.Property<string>("DepositLocation")
                         .HasMaxLength(200)
@@ -545,24 +651,39 @@ namespace AbcLettingAgency.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("LandlordId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Frequency")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("LandlordId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("ManagementFeePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
 
                     b.Property<DateTime?>("ManagementStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("NextChargeDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
-                    b.Property<string>("PropertyId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long>("PropertyId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("RenewalDueOn")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("RentAmount")
-                        .HasColumnType("decimal(12,2)");
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
 
-                    b.Property<int?>("RentDueDay")
+                    b.Property<int>("RentDueDay")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("StartDate")
@@ -571,15 +692,14 @@ namespace AbcLettingAgency.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("TaRenewalDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TenantId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -587,20 +707,75 @@ namespace AbcLettingAgency.Migrations
 
                     b.HasIndex("PropertyId", "Status");
 
-                    b.HasIndex("TenantId", "Status");
-
                     b.ToTable("Tenancies", "public");
+                });
+
+            modelBuilder.Entity("AbcLettingAgency.EntityModel.TenancyTenant", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("OccupancyEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("OccupancyStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("ResponsibilitySharePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<long>("TenancyId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("TenantId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.HasIndex("TenancyId", "IsPrimary")
+                        .IsUnique()
+                        .HasFilter("\"IsPrimary\" = TRUE");
+
+                    b.HasIndex("TenancyId", "TenantId")
+                        .IsUnique();
+
+                    b.ToTable("TenancyTenants", "public");
                 });
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Tenant", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
@@ -609,12 +784,28 @@ namespace AbcLettingAgency.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
                     b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("SecondEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("SecondPhone")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
@@ -624,15 +815,30 @@ namespace AbcLettingAgency.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("Phone");
+
+                    b.HasIndex("LastName", "FirstName");
 
                     b.ToTable("Tenants", "public");
                 });
 
             modelBuilder.Entity("AbcLettingAgency.EntityModel.Update", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Body")
                         .IsRequired()
@@ -645,20 +851,26 @@ namespace AbcLettingAgency.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("LandlordId")
-                        .HasColumnType("text");
+                    b.Property<long?>("LandlordId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("PropertyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("PropertyId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("TenancyId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenancyId")
+                        .HasColumnType("bigint");
 
-                    b.Property<string>("TenantId")
-                        .HasColumnType("text");
+                    b.Property<long?>("TenantId")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -671,6 +883,65 @@ namespace AbcLettingAgency.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Updates", "public");
+                });
+
+            modelBuilder.Entity("AbcLettingAgency.Shared.Events.OutboxMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("DeadLetteredUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DedupKey")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LockedUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("OccurredUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("ProcessedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeadLetteredUtc");
+
+                    b.HasIndex("ProcessedUtc");
+
+                    b.HasIndex("Type", "DedupKey")
+                        .IsUnique()
+                        .HasFilter("\"DedupKey\" IS NOT NULL");
+
+                    b.ToTable("outbox_messages", "public");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -690,6 +961,12 @@ namespace AbcLettingAgency.Migrations
                     b.Property<string>("NormalizedName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -717,6 +994,12 @@ namespace AbcLettingAgency.Migrations
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RoleId");
@@ -741,6 +1024,12 @@ namespace AbcLettingAgency.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id");
 
                     b.HasIndex("UserId");
@@ -762,6 +1051,12 @@ namespace AbcLettingAgency.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("LoginProvider", "ProviderKey");
 
                     b.HasIndex("UserId");
@@ -776,6 +1071,12 @@ namespace AbcLettingAgency.Migrations
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("uuid");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("UserId", "RoleId");
 
@@ -797,6 +1098,12 @@ namespace AbcLettingAgency.Migrations
 
                     b.Property<string>("Value")
                         .HasColumnType("text");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
@@ -835,19 +1142,22 @@ namespace AbcLettingAgency.Migrations
                     b.HasOne("AbcLettingAgency.EntityModel.Invoice", "Invoice")
                         .WithMany("Documents")
                         .HasForeignKey("InvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AbcLettingAgency.EntityModel.Property", "Property")
                         .WithMany("Documents")
-                        .HasForeignKey("PropertyId");
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AbcLettingAgency.EntityModel.Tenancy", "Tenancy")
                         .WithMany("Documents")
-                        .HasForeignKey("TenancyId");
+                        .HasForeignKey("TenancyId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AbcLettingAgency.EntityModel.Tenant", "Tenant")
                         .WithMany("Documents")
-                        .HasForeignKey("TenantId");
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Invoice");
 
@@ -948,15 +1258,26 @@ namespace AbcLettingAgency.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Landlord");
+
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("AbcLettingAgency.EntityModel.TenancyTenant", b =>
+                {
+                    b.HasOne("AbcLettingAgency.EntityModel.Tenancy", "Tenancy")
+                        .WithMany("Occupants")
+                        .HasForeignKey("TenancyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("AbcLettingAgency.EntityModel.Tenant", "Tenant")
-                        .WithMany("Tenancies")
+                        .WithMany("TenancyLinks")
                         .HasForeignKey("TenantId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Landlord");
-
-                    b.Navigation("Property");
+                    b.Navigation("Tenancy");
 
                     b.Navigation("Tenant");
                 });
@@ -966,22 +1287,22 @@ namespace AbcLettingAgency.Migrations
                     b.HasOne("AbcLettingAgency.EntityModel.Landlord", "Landlord")
                         .WithMany("Updates")
                         .HasForeignKey("LandlordId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("AbcLettingAgency.EntityModel.Property", "Property")
                         .WithMany("Updates")
                         .HasForeignKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("AbcLettingAgency.EntityModel.Tenancy", "Tenancy")
                         .WithMany("Updates")
                         .HasForeignKey("TenancyId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("AbcLettingAgency.EntityModel.Tenant", "Tenant")
                         .WithMany("Updates")
                         .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Landlord");
 
@@ -1085,6 +1406,8 @@ namespace AbcLettingAgency.Migrations
 
                     b.Navigation("Ledger");
 
+                    b.Navigation("Occupants");
+
                     b.Navigation("Receipts");
 
                     b.Navigation("Updates");
@@ -1094,7 +1417,7 @@ namespace AbcLettingAgency.Migrations
                 {
                     b.Navigation("Documents");
 
-                    b.Navigation("Tenancies");
+                    b.Navigation("TenancyLinks");
 
                     b.Navigation("Updates");
                 });

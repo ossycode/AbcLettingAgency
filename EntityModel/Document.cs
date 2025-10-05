@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AbcLettingAgency.EntityModel;
 
-public class Document : EntityBase
+public class Document : EntityBase, IAgencyOwned
 {
     [MaxLength(600)]
     public string Url { get; set; } = default!;
@@ -13,15 +13,16 @@ public class Document : EntityBase
     public string? MimeType { get; set; }
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
-    public string? TenancyId { get; set; }
+    public long? TenancyId { get; set; }
     public Tenancy? Tenancy { get; set; }
 
-    public string? TenantId { get; set; }
+    public long? TenantId { get; set; }
     public Tenant? Tenant { get; set; }
 
-    public string? PropertyId { get; set; }
+    public long? PropertyId { get; set; }
     public Property? Property { get; set; }
 
-    public string? InvoiceId { get; set; }
+    public long? InvoiceId { get; set; }
     public Invoice? Invoice { get; set; }
+    public long AgencyId { get; set; }
 }

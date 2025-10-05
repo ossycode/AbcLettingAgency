@@ -1,10 +1,14 @@
 using AbcLettingAgency.Abstracts;
 using AbcLettingAgency.Data;
 using AbcLettingAgency.Extensions;
+using AbcLettingAgency.Features.TenantManagement.EventsHandler;
+using AbcLettingAgency.Helpers;
+using AbcLettingAgency.Options;
 using AbcLettingAgency.Processors;
 using AbcLettingAgency.Services;
 using AbcLettingAgency.Shared.Abstractions;
 using AbcLettingAgency.Shared.Attributes;
+using AbcLettingAgency.Shared.Events;
 using AbcLettingAgency.Shared.Exceptions;
 using AbcLettingAgency.Shared.Infrastructure;
 using AbcLettingAgency.Shared.Services;
@@ -16,10 +20,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddIdentitySettings();
+
+
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-            npg => npg.MigrationsHistoryTable("__EFMigrationsHistory", "public")
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), option =>
+    {
+        option.MigrationsHistoryTable("__EFMigrationsHistory", "public")
+        .EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorCodesToAdd: new[] { "57P01", "08006", "40001" }   // admin shutdown, conn failure, serialization
+        );
+        option.CommandTimeout(30);
+    }
 ));
+
 builder.Services.AddTransient<ApplicationDbSeeder>();
 builder.Services.AddScoped<IAuthTokenProcessor, AuthTokenProcessor>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -31,6 +46,25 @@ builder.Services.AddScoped<IEntityServiceDependencies, EntityServiceDependencies
 
 builder.Services.AddScoped(typeof(IEntityService<>), typeof(GenericEntityService<>));
 builder.Services.AddScoped<FriendlyCodeGenerator>();
+builder.Services.AddHybridCache();
+builder.Services.AddNpgsqlDataSource(
+    builder.Configuration.GetConnectionString("DefaultConnection"));
+
+builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
+
+//EVENTS
+builder.Services.AddScoped<IOutboxWriter, EfOutboxWriter>();
+builder.Services.AddHostedService<OutboxDispatcherWorker>();
+builder.Services.AddHostedService<OutboxCleanupWorker>();
+builder.Services.AddSingleton<IEventTypeRegistry, EventTypeRegistry>();
+builder.Services.AddScoped<IIntegrationEventHandler<RentChargeCreated>, RentChargeCreatedHandler>();
+builder.Services.AddSingleton<IAmbientAgency, AmbientAgency>();
+
+//builder.Services.Scan(s => s
+//    .FromCallingAssembly()
+//    .AddClasses(c => c.AssignableTo(typeof(IIntegrationEventHandler<>)))
+//    .AsImplementedInterfaces()
+//    .WithScopedLifetime());
 
 builder.Services.Scan(s => s
     .FromApplicationDependencies(a =>
@@ -68,6 +102,8 @@ builder.Services.AddCors(options =>
 //});
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+
 builder.Services.RegisterSwagger();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
@@ -78,7 +114,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<BadRequestExceptionHandler>();
 builder.Services.AddExceptionHandler<NoAccessExceptionHandler>();
 builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
-
+builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 // Fallback last
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

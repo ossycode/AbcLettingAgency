@@ -4,12 +4,12 @@ namespace AbcLettingAgency.Features.Properties;
 
 public static class PropertyErrors
 {
-    public static AppError NotFound(string? id = null)
+    public static AppError NotFound(long? id = null)
         => new(
             code: "Property.NotFound",
             message: "Property not found.",
             type: ErrorType.NotFound,
-            key: id
+            key: id.ToString()
         );
 
     public static AppError CodeAlreadyExists(string code)
@@ -20,12 +20,12 @@ public static class PropertyErrors
             key: "code"
         );
 
-    public static AppError LandlordNotFound(string landlordId)
+    public static AppError LandlordNotFound(long landlordId)
         => new(
             code: "Property.LandlordNotFound",
             message: $"Landlord '{landlordId}' was not found.",
             type: ErrorType.NotFound,
-            key: "landlordId"
+            key: landlordId.ToString()
         );
 
     public static AppError HasLinkedEntities()

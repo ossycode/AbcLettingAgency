@@ -39,7 +39,7 @@ public class LandlordService(IEntityServiceDependencies deps, IEntityServiceFact
 
         return Result.Success();
     }
-    public async Task<Result> UpdateAsync(string id, UpdateLandlordRequest req, CancellationToken ct)
+    public async Task<Result> UpdateAsync(long id, UpdateLandlordRequest req, CancellationToken ct)
     {
         var landlord = await _entityService.For<Landlord>().GetByIdAsync(id, ct);
 
@@ -68,7 +68,7 @@ public class LandlordService(IEntityServiceDependencies deps, IEntityServiceFact
         return Result.Success();
     }
 
-    public async Task<Result> DeleteAsync(string id, CancellationToken ct)
+    public async Task<Result> DeleteAsync(long id, CancellationToken ct)
     {
         var landload = await _entityService.For<Landlord>().GetAll()
             .Select(l => new

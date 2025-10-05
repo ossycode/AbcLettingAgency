@@ -1,4 +1,5 @@
-﻿using AbcLettingAgency.Shared.Abstractions;
+﻿using AbcLettingAgency.EntityModel;
+using AbcLettingAgency.Shared.Abstractions;
 using AbcLettingAgency.Shared.Exceptions;
 using AbcLettingAgency.Shared.Paging;
 using AbcLettingAgency.Shared.Query;
@@ -42,7 +43,7 @@ public abstract class ApiControllerBase<TEntity, TDto>(IEntityServiceFactory fac
     }
 
     [NonAction]
-    protected async Task<ActionResult<TDto>> SingleAsync(string id, CancellationToken ct = default)
+    protected async Task<ActionResult<TDto>> SingleAsync(long id, CancellationToken ct = default)
     {
         var dto = await EntityService.GetByIdAsync(id, Selector, ct);
         return dto is null ? NotFound() : Ok(dto);

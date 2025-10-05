@@ -1,140 +1,174 @@
-﻿using AbcLettingAgency.EntityModel;
+﻿using AbcLettingAgency.Data.Extensions;
+using AbcLettingAgency.EntityModel;
+using AbcLettingAgency.EntityModel.Agencies;
+using AbcLettingAgency.Helpers;
+using AbcLettingAgency.Shared.Abstractions;
+using AbcLettingAgency.Shared.Events;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-
+using System.Reflection;
+using System.Security;
+using static System.ArgumentNullException;
 
 namespace AbcLettingAgency.Data;
 
-
-public class AppDbContext : IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>
+public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser current, IAmbientAgency ambient) : 
+    IdentityDbContext<AppUser, IdentityRole<Guid>, Guid>(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    //public DbSet<AppUser> Users => Set<AppUser>();
+    private readonly ICurrentUser _current = current;
+    private readonly long? _agencyId = current.AgencyIdClaim;
+    private readonly IAmbientAgency _ambient = ambient;
+    internal long? CurrentAgencyId => current.AgencyIdClaim ?? _ambient.Current;
+
+    public bool BypassTenantRules { get; set; }
+
     public DbSet<Landlord> Landlords => Set<Landlord>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Property> Properties => Set<Property>();
     public DbSet<Tenancy> Tenancies => Set<Tenancy>();
+    public DbSet<TenancyTenant> TenancyTenants => Set<TenancyTenant>();
     public DbSet<RentCharge> RentCharges => Set<RentCharge>();
     public DbSet<RentReceipt> RentReceipts => Set<RentReceipt>();
-    public DbSet<ClientLedger> ClientLedger => Set<ClientLedger>();
+    public DbSet<ClientLedger> ClientLedgers => Set<ClientLedger>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
     public DbSet<MaintenanceJob> MaintenanceJobs => Set<MaintenanceJob>();
     public DbSet<Update> Updates => Set<Update>();
     public DbSet<Document> Documents => Set<Document>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    public DbSet<Agency> Agencies => Set<Agency>();
+    public DbSet<AgencyGroup> AgencyGroups => Set<AgencyGroup>();
+    public DbSet<AgencyGroupMembership> AgencyGroupMemberships => Set<AgencyGroupMembership>();
+    public DbSet<AgencyUser> AgencyUsers => Set<AgencyUser>();
+    public DbSet<BillingAccount> BillingAccounts => Set<BillingAccount>();
+    public DbSet<BillingSubscription> BillingSubscriptions => Set<BillingSubscription>();
+    public DbSet<BillingSubscriptionItem> BillingSubscriptionItems => Set<BillingSubscriptionItem>();
+    public DbSet<BillingInvoice> BillingInvoices => Set<BillingInvoice>();
+    public DbSet<AgencyConfiguration> AgencyConfigurations => Set<AgencyConfiguration>();
+
+
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(modelBuilder);
+        ThrowIfNull(builder);
 
-        modelBuilder.HasDefaultSchema("public");
+        base.OnModelCreating(builder);
 
-        modelBuilder.Entity<AppUser>().HasIndex(x => x.Email).IsUnique();
-        modelBuilder.Entity<AppUser>().HasIndex(u => u.RefreshToken).IsUnique();
+        builder.HasDefaultSchema("public");
 
-        modelBuilder.Entity<Property>().HasIndex(x => x.Code).IsUnique();
+        //builder.Entity<EntityBase>().HasQueryFilter(t => !t.IsDeleted);
 
-        modelBuilder.Entity<Tenancy>().HasIndex(x => new { x.PropertyId, x.Status });
-        modelBuilder.Entity<Tenancy>().HasIndex(x => new { x.TenantId, x.Status });
-        modelBuilder.Entity<RentCharge>().HasIndex(x => new { x.TenancyId, x.DueDate, x.Status });
-        modelBuilder.Entity<RentReceipt>().HasIndex(x => new { x.TenancyId, x.ReceivedAt });
+        builder.ApplyConfigurationsFromAssembly(GetType().Assembly);
 
-        modelBuilder.Entity<Property>()
-            .HasOne(p => p.Landlord)
-            .WithMany(l => l.Properties)
-            .HasForeignKey(p => p.LandlordId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.AddSoftDeleteGlobalFilter();
+        //builder.AddAgencyOwnedGlobalFilter(this);
+        builder.UsePostgresXminConcurrencyTokens();
 
-        modelBuilder.Entity<Tenancy>()
-            .HasOne(t => t.Property)
-            .WithMany(p => p.Tenancies)
-            .HasForeignKey(t => t.PropertyId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Tenancy>()
-            .HasOne(t => t.Landlord)
-            .WithMany(l => l.Tenancies)
-            .HasForeignKey(t => t.LandlordId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Tenancy>()
-            .HasOne(t => t.Tenant)
-            .WithMany(te => te.Tenancies)
-            .HasForeignKey(t => t.TenantId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<RentReceipt>()
-            .HasOne(r => r.Charge)
-            .WithMany(c => c.Receipts)
-            .HasForeignKey(r => r.ChargeId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        modelBuilder.Entity<Update>()
-            .HasOne(u => u.Property).WithMany(p => p.Updates)
-            .HasForeignKey(u => u.PropertyId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<Update>()
-            .HasOne(u => u.Tenancy).WithMany(t => t.Updates)
-            .HasForeignKey(u => u.TenancyId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<Update>()
-            .HasOne(u => u.Landlord).WithMany(l => l.Updates)
-            .HasForeignKey(u => u.LandlordId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<Update>()
-            .HasOne(u => u.Tenant).WithMany(t => t.Updates)
-            .HasForeignKey(u => u.TenantId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Document>()
-            .HasOne(d => d.Invoice)
-            .WithMany(i => i.Documents)
-            .HasForeignKey(d => d.InvoiceId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Tenancy>().Property(x => x.RentAmount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<Tenancy>().Property(x => x.CommissionPercent).HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<Tenancy>().Property(x => x.CommissionPercentTo15).HasColumnType("decimal(5,2)");
-        modelBuilder.Entity<Tenancy>().Property(x => x.DepositAmount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<RentCharge>().Property(x => x.Amount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<RentCharge>().Property(x => x.CommissionDue).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<RentCharge>().Property(x => x.AmountAfterCommission).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<RentReceipt>().Property(x => x.Amount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<ClientLedger>().Property(x => x.Amount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<Invoice>().Property(x => x.NetAmount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<Invoice>().Property(x => x.VatAmount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<Invoice>().Property(x => x.GrossAmount).HasColumnType("decimal(12,2)");
-        modelBuilder.Entity<MaintenanceJob>().Property(x => x.Cost).HasColumnType("decimal(12,2)");
+        foreach (var et in builder.Model.GetEntityTypes()
+                 .Where(t => !t.IsOwned() && typeof(IAgencyOwned).IsAssignableFrom(t.ClrType))
+                 .Select(t => t.ClrType))
+        {
+            // Call a generic helper so we can write a strongly-typed lambda
+            GetType()
+                .GetMethod(nameof(ApplyAgencyFilter), BindingFlags.NonPublic | BindingFlags.Instance)!
+                .MakeGenericMethod(et)
+                .Invoke(this, new object[] { builder });
+        }
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
+        configurationBuilder.Properties<decimal?>().HavePrecision(18, 2);
+    }
+    public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
-        foreach (var entry in ChangeTracker.Entries())
+        var uid = _current.UserId;
+        var isPlatform = _current.IsPlatform();
+
+        var needsTenant = !BypassTenantRules &&
+                  ChangeTracker.Entries()
+                  .Any(e => e.State is not (EntityState.Unchanged or EntityState.Detached)
+                            && e.Entity is IAgencyOwned);
+
+        long? aid = null;
+
+        if (needsTenant && !isPlatform)
         {
-            if (entry.State == EntityState.Added)
+            aid = _agencyId ?? await _current.GetAgencyId();
+        }
+
+        foreach (var e in ChangeTracker.Entries())
+        {
+            // Soft delete
+            if (e.State == EntityState.Deleted && e.Entity is ISoftDelete)
             {
-                if (entry.Entity is AppUser au)
-                {
-                    au.CreatedAt = now;
-                    au.UpdatedAt = now;
-                }
-                else if (entry.Metadata.FindProperty("CreatedAt") != null)
-                {
-                    entry.CurrentValues["CreatedAt"] = now;
-                    entry.CurrentValues["UpdatedAt"] = now;
-                }
+                e.State = EntityState.Modified;
+                e.CurrentValues[nameof(ISoftDelete.IsDeleted)] = true;
+                e.CurrentValues["UpdatedAt"] = now;
+                e.CurrentValues["DeletedAtUtc"] = now;
+                if (uid.HasValue && e.Metadata.FindProperty("UserDeletedId") != null)
+                    e.CurrentValues["UserDeletedId"] = uid.Value;
+
+                // Cross-tenant delete guard for agency users
+                if (!isPlatform && e.Entity is IAgencyOwned delOwned && aid.HasValue && delOwned.AgencyId != aid.Value)
+                    throw new SecurityException("Cross-tenant delete blocked.");
+
+                continue;
             }
-            else if (entry.State == EntityState.Modified)
+
+            // Timestamps/user
+            if (e.Metadata.FindProperty("UpdatedAt") != null && e.State is EntityState.Added or EntityState.Modified)
+                e.CurrentValues["UpdatedAt"] = now;
+            if (e.Metadata.FindProperty("CreatedAt") != null && e.State == EntityState.Added)
+                e.CurrentValues["CreatedAt"] = now;
+            if (uid.HasValue && e.Metadata.FindProperty("UserUpdatedId") != null && e.State is EntityState.Added or EntityState.Modified)
+                e.CurrentValues["UserUpdatedId"] = uid.Value;
+
+            if (!BypassTenantRules && e.Entity is IAgencyOwned owned)
             {
-                if (entry.Entity is AppUser au)
-                    au.UpdatedAt = now;
-                else if (entry.Metadata.FindProperty("UpdatedAt") != null)
-                    entry.CurrentValues["UpdatedAt"] = now;
+
+                if (e.State == EntityState.Added)
+                {
+                    if (!isPlatform)
+                    {
+                        // Agency users: auto-fill & enforce same-tenant
+                        if (owned.AgencyId <= 0) owned.AgencyId = aid!.Value;
+                        else if (owned.AgencyId != aid) throw new SecurityException("Cross-tenant create blocked.");
+                    }
+                    else
+                    {
+                        // Platform must set AgencyId explicitly when creating
+                        if (owned.AgencyId <= 0)
+                            throw new SecurityException("Platform must set AgencyId explicitly.");
+                    }
+                }
+                else if (e.State == EntityState.Modified)
+                {
+                    // Prevent AgencyId tampering
+                    e.Property(nameof(IAgencyOwned.AgencyId)).IsModified = false;
+
+                    // Agency users: enforce tenant on update
+                    if (!isPlatform && aid.HasValue && owned.AgencyId != aid.Value)
+                        throw new SecurityException("Cross-tenant update blocked.");
+                }
             }
         }
-        return base.SaveChangesAsync(cancellationToken);
+
+        return await base.SaveChangesAsync(ct);
+    }
+
+
+    private void ApplyAgencyFilter<TEntity>(ModelBuilder b) where TEntity : class, IAgencyOwned
+    {
+        Console.WriteLine("CurrentAgencyId:");
+        Console.WriteLine(CurrentAgencyId);
+        // IMPORTANT: reference the instance property (CurrentAgencyId) directly
+        b.Entity<TEntity>().HasQueryFilter(e =>
+             BypassTenantRules || (CurrentAgencyId != null && e.AgencyId == CurrentAgencyId));
     }
 }
 

@@ -9,6 +9,6 @@ namespace AbcLettingAgency.Features.Landlords.Interface;
 public interface ILandlordService : IEntityService<Landlord>
 {
     Task<Result> CreateAsync(CreateLandlordRequest req, CancellationToken ct);
-    Task<Result> UpdateAsync(string id, UpdateLandlordRequest req, CancellationToken ct);
-    Task<Result> DeleteAsync(string id, CancellationToken ct);
+    Task<Result> UpdateAsync(long id, UpdateLandlordRequest req, CancellationToken ct);
+    Task<Result> DeleteAsync(long id, CancellationToken ct);
 }

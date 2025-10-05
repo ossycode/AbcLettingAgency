@@ -5,11 +5,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AbcLettingAgency.EntityModel;
 
-// --- Maintenance ---
-public class MaintenanceJob : EntityBase
+public class MaintenanceJob : EntityBase, IAgencyOwned
 {
-    public string PropertyId { get; set; } = default!;
+    public long PropertyId { get; set; } = default!;
     public Property Property { get; set; } = default!;
+
+    public long AgencyId { get; set; }
 
     [MaxLength(200)]
     public string Title { get; set; } = default!;
@@ -17,9 +18,8 @@ public class MaintenanceJob : EntityBase
     public JobStatus Status { get; set; } = JobStatus.OPEN;
     public DateTime OpenedAt { get; set; } = DateTime.UtcNow;
     public DateTime? ClosedAt { get; set; }
-    [Column(TypeName = "decimal(12,2)")]
     public decimal? Cost { get; set; }
 
-    public string? InvoiceId { get; set; }
+    public long? InvoiceId { get; set; }
     public Invoice? Invoice { get; set; }
 }

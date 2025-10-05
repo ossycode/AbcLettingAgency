@@ -25,12 +25,10 @@ public class PropertyService(IEntityServiceDependencies deps, FriendlyCodeGenera
         if (landlordExisit is null) return Result.Failure(PropertyErrors.LandlordNotFound(req.LandlordId));
 
 
-        var code = await _codeGenerator.GenerateForPropertyAsync(
-            req.Code, req.AddressLine1, req.City, token);
+        var code = await _codeGenerator.GenerateForPropertyAsync("", req.AddressLine1, req.City, token);
 
         var entity = new Property
         {
-            Id = Guid.NewGuid().ToString(),
             Code = code,
             AddressLine1 = req.AddressLine1,
             AddressLine2 = req.AddressLine2,
@@ -41,8 +39,7 @@ public class PropertyService(IEntityServiceDependencies deps, FriendlyCodeGenera
             Furnished = req.Furnished,
             AvailableFrom = req.AvailableFrom,
             LandlordId = req.LandlordId,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            Notes = req.Notes
         };
 
         await CreateAsync(entity, token);
@@ -50,7 +47,7 @@ public class PropertyService(IEntityServiceDependencies deps, FriendlyCodeGenera
         return Result.Success();
     }
 
-    public async Task<Result> DeleteAsync(string id, CancellationToken token)
+    public async Task<Result> DeleteAsync(long id, CancellationToken token)
     {
         var entity = await _entityService.For<Property>().GetByIdAsync(id, token);
 
@@ -68,7 +65,7 @@ public class PropertyService(IEntityServiceDependencies deps, FriendlyCodeGenera
         return Result.Success();
     }
 
-    public async Task<Result> UpdateAsync(string id, UpdatePropertyRequest req, CancellationToken token)
+    public async Task<Result> UpdateAsync(long id, UpdatePropertyRequest req, CancellationToken token)
     {
        var entity =  await _entityService.For<Property>().GetByIdAsync(id, token);
 
@@ -83,6 +80,7 @@ public class PropertyService(IEntityServiceDependencies deps, FriendlyCodeGenera
         entity.Furnished = req.Furnished;
         entity.AvailableFrom = req.AvailableFrom;
         entity.LandlordId = req.LandlordId;
+        entity.Notes = req.Notes;
 
         await UpdateAsync(entity, token);
 

@@ -5,45 +5,43 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AbcLettingAgency.EntityModel;
 
-public class Tenancy : EntityBase
+public class Tenancy : EntityBase, IAgencyOwned
 {
-    public string PropertyId { get; set; } = default!;
+    public long PropertyId { get; set; }
     public Property Property { get; set; } = default!;
+    public long AgencyId { get; set; }
 
-    public string LandlordId { get; set; } = default!;
+    public long LandlordId { get; set; }
     public Landlord Landlord { get; set; } = default!;
-
-    public string TenantId { get; set; } = default!;
-    public Tenant Tenant { get; set; } = default!;
 
     public TenancyStatus Status { get; set; } = TenancyStatus.ACTIVE;
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+
+    public int RentDueDay { get; set; }
+    public RentFrequency Frequency { get; set; } = RentFrequency.Monthly;
+
     public DateTime? CheckInDate { get; set; }
     public DateTime? ManagementStart { get; set; }
-    public DateTime? TaRenewalDate { get; set; }
-
-    // Money
-    [Column(TypeName = "decimal(12,2)")]
+    public DateTime? RenewalDueOn { get; set; }
+    public DateTime? NextChargeDate { get; set; }
     public decimal RentAmount { get; set; }
-    public int? RentDueDay { get; set; }
 
-    [Column(TypeName = "decimal(5,2)")]
     public decimal? CommissionPercent { get; set; }
+    public decimal? ManagementFeePercent { get; set; }
 
-    [Column(TypeName = "decimal(5,2)")]
-    public decimal? CommissionPercentTo15 { get; set; }
-
-    [Column(TypeName = "decimal(12,2)")]
     public decimal? DepositAmount { get; set; }
 
     [MaxLength(200)]
     public string? DepositLocation { get; set; }
     public string? Notes { get; set; }
 
-    public List<RentCharge> Charges { get; set; } = new();
-    public List<RentReceipt> Receipts { get; set; } = new();
-    public List<ClientLedger> Ledger { get; set; } = new();
-    public List<Update> Updates { get; set; } = new();
-    public List<Document> Documents { get; set; } = new();
+    public ICollection<RentCharge> Charges { get; set; } = [];
+    public ICollection<RentReceipt> Receipts { get; set; } = [];
+    public ICollection<ClientLedger> Ledger { get; set; } = [];
+    public ICollection<Update> Updates { get; set; } = [];
+    public ICollection<Document> Documents { get; set; } = [];
+
+    public ICollection<TenancyTenant> Occupants { get; set; } = [];
+    public bool IsDeleted { get; set; }
 }

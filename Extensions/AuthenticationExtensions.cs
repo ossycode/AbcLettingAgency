@@ -51,7 +51,8 @@ public static class AuthenticationExtensions
                     IssuerSigningKey = signingKey,
                     ClockSkew = TimeSpan.Zero,
                     RoleClaimType = ClaimTypes.Role,
-                    NameClaimType = ClaimTypes.NameIdentifier
+                    NameClaimType = ClaimTypes.NameIdentifier,
+                    
 
                 };
 
@@ -59,11 +60,6 @@ public static class AuthenticationExtensions
                 {
                     OnMessageReceived = context =>
                     {
-                        //var auth = context.Request.Headers["Authorization"].ToString();
-                        //if (!string.IsNullOrEmpty(auth) && auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-                        //{
-                        //    return Task.CompletedTask;
-                        //}
 
                         var token = context.Request.Cookies["ACCESS_TOKEN"];
                         if (!string.IsNullOrEmpty(token))
@@ -71,10 +67,6 @@ public static class AuthenticationExtensions
                             context.Token = token;
                             return Task.CompletedTask;
                         }
-
-                        // 3) (Optional) Support query string for websockets/SignalR if needed:
-                        // var qsToken = context.Request.Query["access_token"];
-                        // if (!StringValues.IsNullOrEmpty(qsToken)) context.Token = qsToken;
 
                         return Task.CompletedTask;
                     },
@@ -135,14 +127,17 @@ public static class AuthenticationExtensions
 
         services.AddAuthorization(options =>
         {
-            foreach (var prop in typeof(AppPermissions).GetNestedTypes().SelectMany(c => c.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)))
-            {
-                var propertyValue = prop.GetValue(null);
-                if (propertyValue is not null)
-                {
-                    options.AddPolicy(propertyValue.ToString(), policy => policy.RequireClaim(AppClaim.Permission, propertyValue.ToString()));
-                }
-            }
+            //foreach (var prop in typeof(AppPermissions).GetNestedTypes().SelectMany(c => c.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)))
+            //{
+            //    var propertyValue = prop.GetValue(null);
+            //    if (propertyValue is not null)
+            //    {
+            //        options.AddPolicy(propertyValue.ToString(), policy => policy.RequireClaim(AppClaim.Permission, propertyValue.ToString()));
+            //    }
+            //}
+
+            foreach (var p in AppPermissions.AllPermissions)
+                options.AddPolicy(p.Name, policy => policy.RequireClaim(AppClaim.Permission, p.Name));
         });
 
         return services;

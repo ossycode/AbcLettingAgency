@@ -9,6 +9,6 @@ namespace AbcLettingAgency.Features.Properties.Interface;
 public interface IPropertyService : IEntityService<Property>
 {
     Task<Result> CreateAsync(CreatePropertyRequest req, CancellationToken token);
-    Task<Result> UpdateAsync(string id, UpdatePropertyRequest req, CancellationToken token);
-    Task<Result> DeleteAsync(string id, CancellationToken token);
+    Task<Result> UpdateAsync(long id, UpdatePropertyRequest req, CancellationToken token);
+    Task<Result> DeleteAsync(long id, CancellationToken token);
 }

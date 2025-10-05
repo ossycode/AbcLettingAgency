@@ -32,7 +32,9 @@ public sealed class PropertiesController(IEntityServiceFactory factory,
         AvailableFrom = l.AvailableFrom,
         LandlordId = l.LandlordId,
         UpdatedAt = l.UpdatedAt,
-        CreatedAt = l.CreatedAt
+        CreatedAt = l.CreatedAt,
+        Notes = l.Notes,
+        LandlordName = l.Landlord.Name
     };
 
     [HttpGet]
@@ -43,7 +45,7 @@ public sealed class PropertiesController(IEntityServiceFactory factory,
     => PagedAsync(opts, filters, _propertyService.GetAll(), ct);
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(string id, CancellationToken ct)
+    public async Task<IActionResult> Get(long id, CancellationToken ct)
     {
         var result = await EntityService.GetByIdAsync(id, Selector, ct);
         return result is null ? NotFound() : Ok(result);
@@ -59,14 +61,14 @@ public sealed class PropertiesController(IEntityServiceFactory factory,
 
     [HasPermission(AppFeature.Entity, AppAction.Update)]
     [HttpPatch("{id}")]
-    public async Task<IActionResult> Update(string id, [FromBody] UpdatePropertyRequest req, CancellationToken ct)
+    public async Task<IActionResult> Update(long id, [FromBody] UpdatePropertyRequest req, CancellationToken ct)
     {
         return FromResult(await _propertyService.UpdateAsync(id, req, ct));
     }
 
     [HasPermission(AppFeature.Entity, AppAction.Delete)]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id, CancellationToken ct)
+    public async Task<IActionResult> Delete(long id, CancellationToken ct)
     {
         return FromResult(await _propertyService.DeleteAsync(id, ct));
     }

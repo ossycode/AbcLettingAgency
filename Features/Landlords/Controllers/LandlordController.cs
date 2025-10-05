@@ -44,7 +44,7 @@ public class LandlordController(
         => PagedAsync(opts, filters, _service.GetAll(), ct);
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(string id, CancellationToken ct)
+    public async Task<IActionResult> Get(long id, CancellationToken ct)
     {
         var result = await EntityService.GetByIdAsync(id, Selector, ct);
          return result is null ? NotFound() : Ok(result);
@@ -60,14 +60,14 @@ public class LandlordController(
 
     [HasPermission(AppFeature.Entity, AppAction.Update)]
     [HttpPatch("{id}")]
-    public async Task<IActionResult> Update(string id, [FromBody] UpdateLandlordRequest req, CancellationToken ct)
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateLandlordRequest req, CancellationToken ct)
     {
         return FromResult(await _service.UpdateAsync(id, req, ct));
     }
 
     [HasPermission(AppFeature.Entity, AppAction.Delete)]
     [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(string id, CancellationToken ct)
+    public async Task<IActionResult> Delete(long id, CancellationToken ct)
     {
        return FromResult(await _service.DeleteAsync(id, ct));
     }

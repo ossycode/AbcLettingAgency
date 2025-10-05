@@ -2,20 +2,13 @@
 using AbcLettingAgency.Authorization;
 using AbcLettingAgency.EntityModel;
 using AbcLettingAgency.Options;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Net;
-using System.Reflection.PortableExecutable;
-using System.Runtime.ConstrainedExecution;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using static System.Net.WebRequestMethods;
 
 namespace AbcLettingAgency.Processors;
 
@@ -36,7 +29,7 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
 
 
 
-    public async Task<(string jwtToken, DateTime expiresAtUtc)> GenerateJwtToken(AppUser user)
+    public async Task<(string jwtToken, DateTime expiresAtUtc)> GenerateJwtToken(AppUser user, long? agencyId = null)
     {
         var signinKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(_jwtOptions.Secret));
@@ -53,10 +46,11 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(type: JwtRegisteredClaimNames.GivenName, user.FirstName ?? string.Empty),
             new(type: JwtRegisteredClaimNames.FamilyName, user.LastName ?? string.Empty),
-            new("ss", user.SecurityStamp ?? string.Empty), // <-- add stamp
-
-
+            new("ss", user.SecurityStamp ?? string.Empty)
         };
+
+        if (agencyId is not null)
+            claims.Add(new(AppClaim.AgencyId, agencyId.Value.ToString()));
 
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
@@ -75,6 +69,9 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
             foreach (var c in roleClaims.Where(c => c.Type == AppClaim.Permission))
                 perms.Add(c.Value);
         }
+
+        foreach (var c in userClaims.Where(c => c.Type == AppClaim.PlatformRole))
+            claims.Add(c);
 
         claims.AddRange(perms.Select(p => new Claim(AppClaim.Permission, p)));
 

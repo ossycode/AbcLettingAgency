@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AbcLettingAgency.EntityModel;
 
-public class Landlord : EntityBase
+public class Landlord : EntityBase, IAgencyOwned
 {
     [MaxLength(200)]
     public string Name { get; set; } = default!;
@@ -18,6 +18,8 @@ public class Landlord : EntityBase
     [MaxLength(20)]
     public string? BankSort { get; set; }
     public string? Notes { get; set; }
+
+    public long AgencyId { get; set; }
 
     public List<Property> Properties { get; set; } = new();
     public List<Tenancy> Tenancies { get; set; } = new();

@@ -1,23 +1,29 @@
 ﻿using AbcLettingAgency.Abstracts;
 using AbcLettingAgency.Authorization;
+using AbcLettingAgency.Data;
 using AbcLettingAgency.Dtos.Request;
 using AbcLettingAgency.Dtos.Response;
 using AbcLettingAgency.EntityModel;
 using AbcLettingAgency.Shared.Exceptions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
 namespace AbcLettingAgency.Services;
 
-public class UserService(UserManager<AppUser> userManager, RoleManager<IdentityRole<Guid>> roleManager) : IUserService
+public class UserService(UserManager<AppUser> userManager,
+    RoleManager<IdentityRole<Guid>> roleManager,
+    AppDbContext appDb) : IUserService
 {
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
+    private readonly AppDbContext _appDbContext = appDb;
 
     public async Task<Result<UserMeDto>> GetMeAsync(ClaimsPrincipal principal, CancellationToken ct)
     {
         var userResult = await GetUserAsync(principal);
+        if (!userResult.IsSuccess) return Result<UserMeDto>.Failure(userResult.Errors);
         var user = userResult.Value;
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -36,6 +42,21 @@ public class UserService(UserManager<AppUser> userManager, RoleManager<IdentityR
                 perms.Add(c.Value);
         }
 
+        var isPlatform = userClaims.Any(c => c.Type == AppClaim.PlatformRole);
+        var activeAgencyIdClaim = principal.FindFirstValue(AppClaim.AgencyId);
+        long? activeAgencyId = long.TryParse(activeAgencyIdClaim, out var aid) ? aid : null;
+
+        var memberships = await _appDbContext.AgencyUsers
+            .Where(x => x.UserId == user.Id && x.IsActive)
+            .Select(x => new AgencyMembershipDto
+            {
+                AgencyId = x.AgencyId,
+                Name = x.Agency.Name,
+                Slug = x.Agency.Slug,
+                Role = x.Role.ToString()
+            })
+            .ToArrayAsync(ct);
+
         var dto =  new UserMeDto
         {
             Id = user.Id,
@@ -43,11 +64,13 @@ public class UserService(UserManager<AppUser> userManager, RoleManager<IdentityR
             FirstName = user.FirstName,
             LastName = user.LastName,
             Roles = roles.ToArray(),
-            Permissions = perms.OrderBy(x => x).ToArray()
+            Permissions = perms.OrderBy(x => x).ToArray(),
+            IsPlatform = isPlatform,
+            ActiveAgencyId = activeAgencyId,
+            Memberships = memberships
         };
 
-        return Result<UserMeDto>.Success(dto);
-
+        return dto;
     }
 
     public async Task<Result> UpdateMeAsync(ClaimsPrincipal principal, UpdateMeRequest request, CancellationToken ct)

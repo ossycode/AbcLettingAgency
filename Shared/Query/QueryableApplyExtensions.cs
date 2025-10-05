@@ -1,4 +1,6 @@
-﻿using AbcLettingAgency.Shared.Paging;
+﻿using AbcLettingAgency.Data;
+using AbcLettingAgency.Shared.Abstractions;
+using AbcLettingAgency.Shared.Paging;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
@@ -6,7 +8,6 @@ namespace AbcLettingAgency.Shared.Query;
 
 public static class QueryableApplyExtensions
 {
-    // Simple dynamic filter rules
     public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> q, IEnumerable<FilterRule>? filters)
     {
         if (filters is null) return q;
@@ -61,7 +62,6 @@ public static class QueryableApplyExtensions
         }
     }
 
-    // Sort by property name
     public static IQueryable<T> ApplySorting<T>(this IQueryable<T> q, string? sortBy, bool desc)
     {
         if (string.IsNullOrWhiteSpace(sortBy)) return q;
@@ -78,7 +78,6 @@ public static class QueryableApplyExtensions
             .Invoke(null, new object[] { q, key })!;
     }
 
-    // Free text search across selected fields (string only)
     public static IQueryable<T> ApplySearch<T>(this IQueryable<T> q, string? term, string[] fields)
     {
         if (string.IsNullOrWhiteSpace(term) || fields.Length == 0) return q;
@@ -133,4 +132,13 @@ public static class QueryableApplyExtensions
             Total = total
         };
     }
+
+    public static IQueryable<T> ForAgency<T>(this IQueryable<T> q, long agencyId) where T : class, IAgencyOwned
+    {
+        return q.Where(e => e.AgencyId == agencyId);
+    }
+
+    //public static Task<bool> BelongsToAgency<T>(this AppDbContext db, long id, long agencyId)
+    //where T : class, IAgencyOwned
+    //=> db.Set<T>().AnyAsync(x => x.Id == id && x.AgencyId == agencyId);
 }

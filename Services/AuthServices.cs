@@ -1,6 +1,8 @@
 ﻿using AbcLettingAgency.Abstracts;
 using AbcLettingAgency.Authorization;
+using AbcLettingAgency.Data;
 using AbcLettingAgency.Dtos;
+using AbcLettingAgency.Dtos.Response;
 using AbcLettingAgency.EntityModel;
 using AbcLettingAgency.Exceptions;
 using AbcLettingAgency.Processors;
@@ -11,11 +13,16 @@ using System.Security.Claims;
 
 namespace AbcLettingAgency.Services;
 
-public class AuthService(IAuthTokenProcessor authTokenProcessor, UserManager<AppUser> userManager
+public class AuthService(IAuthTokenProcessor authTokenProcessor,
+    UserManager<AppUser> userManager,
+    RoleManager<IdentityRole<Guid>> roleManager,
+    AppDbContext db
    ) : IAuthService
 {
     private readonly IAuthTokenProcessor _authTokenProcessor = authTokenProcessor;
     private readonly UserManager<AppUser> _userManager = userManager;
+    private readonly RoleManager<IdentityRole<Guid>> _roleManager = roleManager;
+    private readonly AppDbContext _appDbContext = db;
 
     public async Task<Result> CreateUserAsync(RegisterRequest req)
     {
@@ -34,13 +41,34 @@ public class AuthService(IAuthTokenProcessor authTokenProcessor, UserManager<App
         return Result.Success();
     }
 
-    public async Task<Result> LoginAsync(LoginRequest req)
+    public async Task<Result<LoginResponse>> LoginAsync(LoginRequest req)
     {
         var user = await _userManager.FindByEmailAsync(req.Email);
         if (user is null || !await _userManager.CheckPasswordAsync(user, req.Password))
-            return Result.Failure(Errors.Auth.InvalidCredentials());
+            return Errors.Auth.InvalidCredentials();
 
-        var (jwtToken, expirationUtc) = await _authTokenProcessor.GenerateJwtToken(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        var userClaims = await _userManager.GetClaimsAsync(user);
+        var isPlatform = userClaims.Any(c => c.Type == AppClaim.PlatformRole);
+
+        // Memberships (IGNORE FILTERS – no agency claim yet)
+        var agencies = await _appDbContext.AgencyUsers
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(x => x.UserId == user.Id && x.IsActive)
+            .OrderBy(x => x.JoinedAt)
+            .Select(x => new AgencySummary
+            {
+                Id = x.AgencyId,
+                Name = x.Agency.Name,
+                Slug = x.Agency.Slug
+            })
+            .ToListAsync();
+
+        long? selectedAgencyId = agencies.Count == 1 ? agencies[0].Id : null;
+
+        var (jwtToken, expirationUtc) = await _authTokenProcessor.GenerateJwtToken(user, selectedAgencyId);
+
         var refreshToken = _authTokenProcessor.GenerateRefreshToken();
 
         user.RefreshToken = refreshToken;
@@ -48,12 +76,38 @@ public class AuthService(IAuthTokenProcessor authTokenProcessor, UserManager<App
 
         var update = await _userManager.UpdateAsync(user);
         if (!update.Succeeded)
-            return Result.Failure(Errors.Identity.FromIdentity(update));
+                    return Result<LoginResponse>.Failure(Errors.Identity.FromIdentity(update));
 
         _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("ACCESS_TOKEN", jwtToken, expirationUtc);
         _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("REFRESH_TOKEN", refreshToken, user.RefreshTokenExpiresAtUtc);
 
-        return Result.Success();
+        // Optional permissions payload (small sets only)
+        var perms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var c in userClaims.Where(c => c.Type == AppClaim.Permission)) perms.Add(c.Value);
+        foreach (var roleName in roles)
+        {
+            var role = await _roleManager.FindByNameAsync(roleName);
+            if (role is null) continue;
+            var roleClaims = await _roleManager.GetClaimsAsync(role);
+            foreach (var c in roleClaims.Where(c => c.Type == AppClaim.Permission)) perms.Add(c.Value);
+        }
+
+        var dto = new LoginResponse
+        {
+            UserId = user.Id,
+            Email = user.Email!,
+            DisplayName = $"{user.FirstName} {user.LastName}".Trim(),
+            IsPlatform = isPlatform,
+            SelectedAgencyId = selectedAgencyId,
+            AgencyCount = agencies.Count,
+            NeedsAgencySelection = !isPlatform && agencies.Count != 1,
+            Agencies = agencies.ToArray(),
+            Roles = roles.ToArray(),
+            Permissions = perms.OrderBy(p => p).ToArray()
+        };
+
+
+        return dto;
     }
 
     public async Task<Result> RefreshTokenAsync(string? refreshToken)

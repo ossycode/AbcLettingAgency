@@ -1,8 +1,10 @@
-﻿namespace AbcLettingAgency.Features.Landlords;
+﻿using System.Text.Json.Serialization;
+
+namespace AbcLettingAgency.Features.Landlords;
 
 public sealed class LandlordListDto
 {
-    public required string Id { get; init; }
+    public required long Id { get; init; }
     public required string Name { get; init; }
     public string? Email { get; init; }
     public string? Phone { get; init; }
@@ -16,7 +18,8 @@ public sealed class LandlordListDto
 
 public sealed class LandlordDto
 {
-    public required string Id { get; init; }
+    //[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+    public required long Id { get; init; }
     public required string Name { get; init; }
     public string? Email { get; init; }
     public string? Phone { get; init; }

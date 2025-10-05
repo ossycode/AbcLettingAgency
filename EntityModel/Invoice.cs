@@ -5,13 +5,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AbcLettingAgency.EntityModel;
 
-// --- Invoices (AP) ---
-public class Invoice : EntityBase
+public class Invoice : EntityBase, IAgencyOwned
 {
-    public string? PropertyId { get; set; }
+    public long? PropertyId { get; set; }
     public Property? Property { get; set; }
 
-    public string? TenancyId { get; set; }
+    public long AgencyId { get; set; }
+    public long? TenancyId { get; set; }
     public Tenancy? Tenancy { get; set; }
 
     [MaxLength(200)]
@@ -23,11 +23,8 @@ public class Invoice : EntityBase
     public DateTime IssueDate { get; set; }
     public DateTime? DueDate { get; set; }
 
-    [Column(TypeName = "decimal(12,2)")]
     public decimal NetAmount { get; set; }
-    [Column(TypeName = "decimal(12,2)")]
     public decimal VatAmount { get; set; }
-    [Column(TypeName = "decimal(12,2)")]
     public decimal GrossAmount { get; set; }
 
     public InvoiceStatus Status { get; set; } = InvoiceStatus.OPEN;
