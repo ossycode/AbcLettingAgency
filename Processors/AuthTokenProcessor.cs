@@ -119,27 +119,24 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
             }
         }
 
-        var flagKey = $"cookie_written:{cookieName}";
-        if (httpContext.Items.ContainsKey(flagKey)) return;
-        httpContext.Items[flagKey] = true;
-
-        httpContext.Response.OnStarting(() =>
+        if (httpContext.Response.HasStarted)
         {
-            var opt = new CookieOptions
-            {
-                // Prefer DateTimeOffset or MaxAge
-                Expires = new DateTimeOffset(expiresUtc, TimeSpan.Zero),
-                HttpOnly = true,
-                IsEssential = true,
-                SameSite = sameSite,
-                Secure = secure,
-                Path = path,
-                Domain = domain
-            };
+            Console.WriteLine($"[Auth] Response already started; cannot set cookie '{cookieName}'.");
+            return;
+        }
 
-            httpContext.Response.Cookies.Append(cookieName, token, opt);
-            return Task.CompletedTask;
-        });
+        var opt = new CookieOptions
+        {
+            Expires = new DateTimeOffset(expiresUtc, TimeSpan.Zero),
+            HttpOnly = true,
+            IsEssential = true,
+            SameSite = sameSite,
+            Secure = secure,
+            Path = path,
+            Domain = domain
+        };
+
+        httpContext.Response.Cookies.Append(cookieName, token, opt);
     }
 
     public void ClearAuthCookie(string cookieName)
@@ -161,8 +158,11 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
             Domain = domain
         };
 
-        ctx.Response.Cookies.Append(cookieName, string.Empty, opt);
-        ctx.Response.Cookies.Delete(cookieName, opt);
+        if (!ctx.Response.HasStarted)
+        {
+            ctx.Response.Cookies.Append(cookieName, string.Empty, opt);
+            ctx.Response.Cookies.Delete(cookieName, opt);
+        }
     }
 
     private void ResolveCookiePolicy(

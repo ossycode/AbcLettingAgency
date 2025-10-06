@@ -1,6 +1,8 @@
 ﻿using AbcLettingAgency.Abstracts;
 using AbcLettingAgency.Dtos;
+using AbcLettingAgency.Services;
 using AbcLettingAgency.Shared.Controllers;
+using AbcLettingAgency.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,8 +22,12 @@ public class AuthController(IAuthService accountService) : BaseController
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
+        var result = await _accountService.LoginAsync(request);
 
-        return FromResult(await _accountService.LoginAsync(request));
+        if (!result.IsSuccess)
+            return Unauthorized(result.Errors[0]);
+
+        return Ok(result.Value);
     }
 
     [AllowAnonymous]

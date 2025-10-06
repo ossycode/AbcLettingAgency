@@ -3,7 +3,7 @@
 public sealed class AuthCookieOptions
 {
     // If frontend and API are on different *sites* (not just subdomains), set true
-    public bool CrossSite { get; init; } = true;
+    public bool CrossSite { get; init; }
 
     // Optional overrides (otherwise inferred from env + CrossSite)
     public SameSiteMode? SameSiteOverride { get; init; }
@@ -16,6 +16,6 @@ public sealed class AuthCookieOptions
     // Names / lifetimes (handy if you want to centralize)
     public string AccessCookieName { get; init; } = "ACCESS_TOKEN";
     public string RefreshCookieName { get; init; } = "REFRESH_TOKEN";
-    public int AccessMinutes { get; init; } = 15;
+    public int AccessMinutes { get; init; } = 120;
     public int RefreshDays { get; init; } = 7;
 }
