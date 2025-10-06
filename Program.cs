@@ -157,12 +157,6 @@ builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 // Fallback last
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-
-builder.Services.PostConfigure<JwtOptions>(o =>
-{
-    Console.WriteLine($"[JwtOptions] Issuer={o.Issuer}, Audience={o.Audience}, ExpirationMinutes={o.ExpirationMinutes} {o.Secret}");
-});
-
 var app = builder.Build();
 
 app.SeedDatabase();

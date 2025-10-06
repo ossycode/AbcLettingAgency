@@ -11,7 +11,7 @@ internal static class AppConfigurationServiceExtension
         services.Configure<JwtOptions>(configuration.GetSection(nameof(JwtOptions)));
 
         return applicationSettingsConfiguration.Get<JwtOptions>() ??
-            throw new InvalidOperationException("Failed to bind configuration to JwtOptions.");
+            throw new InvalidOperationException("Failed to bind configuration to JwtOptions."); 
 
     }
 
@@ -22,7 +22,7 @@ IConfiguration configuration)
         services.Configure<AuthCookiesOptions>(configuration.GetSection(nameof(AuthCookiesOptions)));
 
         return applicationSettingsConfiguration.Get<AuthCookiesOptions>() ??
-            throw new InvalidOperationException("Failed to bind configuration to AuthCookieOptions.");
+            throw new InvalidOperationException("Failed to bind configuration to AuthCookiesOptions.");
 
     }
 
