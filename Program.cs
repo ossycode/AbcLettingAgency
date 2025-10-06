@@ -76,30 +76,23 @@ builder.Services.Scan(s => s
     .WithScopedLifetime()
 );
 
-//var allowedOrigins = builder.Configuration
-//    .GetSection("CORS:AllowedOrigins").Get<string[]>() ?? ["https://abc-letting-agency.vercel.app", "http://localhost:3000"];
-
+var allowedOrigins = builder.Environment.IsDevelopment()
+    ? new[] { "http://localhost:3000", "http://localhost:5173" }
+    : new[] { "https://cvedup.com", "https://*.cvedup.com" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LettingAgency", policy =>
     {
-        policy
-              .AllowAnyMethod()
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
+              .AllowAnyMethod()
               .AllowCredentials()
-              .SetIsOriginAllowed(host => true);
-
+              .SetIsOriginAllowedToAllowWildcardSubdomains();
+        //if (!builder.Environment.IsDevelopment())
+        //    policy.SetIsOriginAllowedToAllowWildcardSubdomains();
     });
 });
-
-//builder.Services.AddCors(o => {
-//    o.AddPolicy("frontend", p => p
-//      .WithOrigins("https://abc-letting-agency.vercel.app", "http://localhost:3000")
-//      .AllowAnyHeader()
-//      .AllowAnyMethod()
-//      .AllowCredentials());
-//});
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
@@ -143,6 +136,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.MapGet("/healthz", () => Results.Ok("ok"));
-
 
 app.Run();
