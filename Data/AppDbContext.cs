@@ -164,8 +164,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser c
 
     private void ApplyAgencyFilter<TEntity>(ModelBuilder b) where TEntity : class, IAgencyOwned
     {
-        Console.WriteLine("CurrentAgencyId:");
-        Console.WriteLine(CurrentAgencyId);
         // IMPORTANT: reference the instance property (CurrentAgencyId) directly
         b.Entity<TEntity>().HasQueryFilter(e =>
              BypassTenantRules || (CurrentAgencyId != null && e.AgencyId == CurrentAgencyId));

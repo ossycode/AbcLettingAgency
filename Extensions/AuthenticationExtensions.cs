@@ -1,6 +1,7 @@
 ﻿using AbcLettingAgency.Authorization;
 using AbcLettingAgency.EntityModel;
 using AbcLettingAgency.Options;
+using AbcLettingAgency.Shared.Permissions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -114,7 +115,9 @@ public static class AuthenticationExtensions
             //}
 
             foreach (var p in AppPermissions.AllPermissions)
-                options.AddPolicy(p.Name, policy => policy.RequireClaim(AppClaim.Permission, p.Name));
+                options.AddPolicy(p.Name, policy => policy.AddRequirements(new PermissionRequirement(p.Name)));
+
+            //options.AddPolicy(p.Name, policy => policy.RequireClaim(AppClaim.Permission, p.Name));
         });
 
         return services;

@@ -54,26 +54,26 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
 
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
-        var perms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        //var perms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        var userClaims = await userManager.GetClaimsAsync(user);
-        foreach (var c in userClaims.Where(c => c.Type == AppClaim.Permission))
-            perms.Add(c.Value);
+        //var userClaims = await userManager.GetClaimsAsync(user);
+        //foreach (var c in userClaims.Where(c => c.Type == AppClaim.Permission))
+        //    perms.Add(c.Value);
 
-        foreach (var roleName in roles)
-        {
-            var role = await roleManager.FindByNameAsync(roleName);
-            if (role is null) continue;
+        //foreach (var roleName in roles)
+        //{
+        //    var role = await roleManager.FindByNameAsync(roleName);
+        //    if (role is null) continue;
 
-            var roleClaims = await roleManager.GetClaimsAsync(role);
-            foreach (var c in roleClaims.Where(c => c.Type == AppClaim.Permission))
-                perms.Add(c.Value);
-        }
+        //    var roleClaims = await roleManager.GetClaimsAsync(role);
+        //    foreach (var c in roleClaims.Where(c => c.Type == AppClaim.Permission))
+        //        perms.Add(c.Value);
+        //}
 
-        foreach (var c in userClaims.Where(c => c.Type == AppClaim.PlatformRole))
-            claims.Add(c);
+        //foreach (var c in userClaims.Where(c => c.Type == AppClaim.PlatformRole))
+        //    claims.Add(c);
 
-        claims.AddRange(perms.Select(p => new Claim(AppClaim.Permission, p)));
+        //claims.AddRange(perms.Select(p => new Claim(AppClaim.Permission, p)));
 
         var expires = DateTime.UtcNow.AddMinutes(_jwtOptions.ExpirationMinutes);
 
