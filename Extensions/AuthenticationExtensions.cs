@@ -58,16 +58,11 @@ public static class AuthenticationExtensions
 
                 o.Events = new JwtBearerEvents
                 {
-                    OnMessageReceived = context =>
+                    OnMessageReceived = ctx =>
                     {
 
-                        var token = context.Request.Cookies["ACCESS_TOKEN"];
-                        if (!string.IsNullOrEmpty(token))
-                        {
-                            context.Token = token;
-                            return Task.CompletedTask;
-                        }
-
+                        var token = ctx.Request.Cookies["ACCESS_TOKEN"];
+                        if (!string.IsNullOrEmpty(token)) ctx.Token = token;
                         return Task.CompletedTask;
                     },
 
@@ -85,42 +80,38 @@ public static class AuthenticationExtensions
                         }
                     },
 
-                    OnAuthenticationFailed = c =>
+                    OnAuthenticationFailed = ctx =>
                     {
-                        if (c.Exception is SecurityTokenExpiredException)
-                        {
-                            c.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                            c.Response.ContentType = "application/json";
-                            var result = JsonConvert.SerializeObject("The Token is expire");
-                            return c.Response.WriteAsync(result);
-                        }
-                        else
-                        {
-                            c.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                            c.Response.ContentType = "application/json";
-                            var result = JsonConvert.SerializeObject("An unhandled error has occurred.");
-                            return c.Response.WriteAsync(result);
-                        }
-                    },
-                    OnChallenge = context =>
-                    {
-                        context.HandleResponse();
-                        if (!context.Response.HasStarted)
-                        {
-                            context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                            context.Response.ContentType = "application/json";
-                            var result = JsonConvert.SerializeObject("You are not Authorized.");
-                            return context.Response.WriteAsync(result);
-                        }
-
+                        //if (c.Exception is SecurityTokenExpiredException)
+                        //{
+                        //    c.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                        //    c.Response.ContentType = "application/json";
+                        //    var result = JsonConvert.SerializeObject("The Token is expire");
+                        //    return c.Response.WriteAsync(result);
+                        //}
+                        //else
+                        //{
+                        //    c.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                        //    c.Response.ContentType = "application/json";
+                        //    var result = JsonConvert.SerializeObject("An unhandled error has occurred.");
+                        //    return c.Response.WriteAsync(result);
+                        //}
+                        ctx.NoResult();        
                         return Task.CompletedTask;
                     },
-                    OnForbidden = context =>
+                    OnChallenge = ctx =>
                     {
-                        context.Response.StatusCode = (int)HttpStatusCode.Forbidden;
-                        context.Response.ContentType = "application/json";
-                        var result = JsonConvert.SerializeObject("You are not authorized to access this resource.");
-                        return context.Response.WriteAsync(result);
+                        ctx.HandleResponse();
+                        if (!ctx.Response.HasStarted)
+                            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        return Task.CompletedTask;
+
+                    },
+                    OnForbidden = ctx =>
+                    {
+                        if (!ctx.Response.HasStarted)
+                            ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        return Task.CompletedTask;
                     },
                 };
             });

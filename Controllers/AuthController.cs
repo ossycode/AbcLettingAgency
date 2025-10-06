@@ -13,12 +13,14 @@ public class AuthController(IAuthService accountService) : BaseController
 {
     private readonly IAuthService _accountService = accountService;
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         return FromResult(await _accountService.CreateUserAsync(request));
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
