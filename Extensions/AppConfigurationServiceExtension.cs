@@ -15,13 +15,13 @@ internal static class AppConfigurationServiceExtension
 
     }
 
-    internal static AuthCookieOptions GetAuthCookieOptionsSettings(this IServiceCollection services,
+    internal static AuthCookiesOptions GetAuthCookieOptionsSettings(this IServiceCollection services,
 IConfiguration configuration)
     {
-        var applicationSettingsConfiguration = configuration.GetSection(nameof(AuthCookieOptions));
-        services.Configure<AuthCookieOptions>(configuration.GetSection(nameof(AuthCookieOptions)));
+        var applicationSettingsConfiguration = configuration.GetSection(nameof(AuthCookiesOptions));
+        services.Configure<AuthCookiesOptions>(configuration.GetSection(nameof(AuthCookiesOptions)));
 
-        return applicationSettingsConfiguration.Get<AuthCookieOptions>() ??
+        return applicationSettingsConfiguration.Get<AuthCookiesOptions>() ??
             throw new InvalidOperationException("Failed to bind configuration to AuthCookieOptions.");
 
     }

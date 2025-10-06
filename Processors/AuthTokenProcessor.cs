@@ -16,7 +16,7 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
     IHttpContextAccessor httpContextAccessor,
     UserManager<AppUser> userManager, 
     RoleManager<IdentityRole<Guid>> roleManager, IHostEnvironment env,
-    IOptions<AuthCookieOptions> authCookieOptions) : IAuthTokenProcessor
+    IOptions<AuthCookiesOptions> authCookieOptions) : IAuthTokenProcessor
 
 {
     private readonly JwtOptions _jwtOptions = jwtOptions.Value;
@@ -24,7 +24,7 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
     private readonly UserManager<AppUser> _userManager = userManager;
 
     private readonly IHostEnvironment _env = env;
-    private readonly AuthCookieOptions _options  = authCookieOptions.Value;
+    private readonly AuthCookiesOptions _options  = authCookieOptions.Value;
 
 
 

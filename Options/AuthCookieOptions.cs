@@ -1,6 +1,6 @@
 ﻿namespace AbcLettingAgency.Options;
 
-public sealed class AuthCookieOptions
+public class AuthCookiesOptions
 {
     // If frontend and API are on different *sites* (not just subdomains), set true
     public bool CrossSite { get; set; }
