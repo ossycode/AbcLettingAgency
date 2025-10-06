@@ -34,6 +34,14 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
         option.CommandTimeout(30);
     }
 ));
+builder.Services.AddNpgsqlDataSource(
+    builder.Configuration.GetConnectionString("DefaultConnection"));
+
+builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
+builder.Services.Configure<AuthCookieOptions>(
+    builder.Configuration.GetSection("AuthCookies"));
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection("JwtOptions"));
 
 builder.Services.AddTransient<ApplicationDbSeeder>();
 builder.Services.AddScoped<IAuthTokenProcessor, AuthTokenProcessor>();
@@ -47,14 +55,7 @@ builder.Services.AddScoped<IEntityServiceDependencies, EntityServiceDependencies
 builder.Services.AddScoped(typeof(IEntityService<>), typeof(GenericEntityService<>));
 builder.Services.AddScoped<FriendlyCodeGenerator>();
 builder.Services.AddHybridCache();
-builder.Services.AddNpgsqlDataSource(
-    builder.Configuration.GetConnectionString("DefaultConnection"));
 
-builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
-builder.Services.Configure<AuthCookieOptions>(
-    builder.Configuration.GetSection("AuthCookies"));
-builder.Services.Configure<JwtOptions>(
-    builder.Configuration.GetSection("JwtOptions"));
 
 //EVENTS
 builder.Services.AddScoped<IOutboxWriter, EfOutboxWriter>();
@@ -80,23 +81,61 @@ builder.Services.Scan(s => s
     .WithScopedLifetime()
 );
 
-var allowedOrigins = builder.Environment.IsDevelopment()
-    ? new[] { "http://localhost:3000", "http://localhost:5173" }
-    : new[] { "https://cvedup.com", "https://www.cvedup.com", "https://*.cvedup.com" };
+var isDev = builder.Environment.IsDevelopment();
 
-builder.Services.AddCors(options =>
+builder.Services.AddCors(o =>
 {
-    options.AddPolicy("LettingAgency", policy =>
-    {
-        policy.WithOrigins(allowedOrigins)
-              .SetIsOriginAllowedToAllowWildcardSubdomains()
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-        //if (!builder.Environment.IsDevelopment())
-        //    policy.SetIsOriginAllowedToAllowWildcardSubdomains();
-    });
+    o.AddPolicy("LettingAgency", p =>
+        p.SetIsOriginAllowed(origin =>
+        {
+            if (!Uri.TryCreate(origin, UriKind.Absolute, out var u)) return false;
+
+            if (isDev)
+            {
+                // Dev: allow http/https from localhost, 127.0.0.1, and lvh.me (for subdomain testing)
+                if (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps) return false;
+
+                if (u.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)) return true;
+                if (u.Host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)) return true;
+                if (u.Host.Equals("lvh.me", StringComparison.OrdinalIgnoreCase)) return true;
+                if (u.Host.EndsWith(".lvh.me", StringComparison.OrdinalIgnoreCase)) return true;
+
+                // Add your LAN IP if you test from devices:
+                // if (u.Host.StartsWith("192.168.", StringComparison.Ordinal)) return true;
+
+                return false;
+            }
+
+            // Prod: only your real https hosts
+            if (u.Scheme != Uri.UriSchemeHttps) return false;
+
+            if (u.Host.Equals("cvedup.com", StringComparison.OrdinalIgnoreCase)) return true;
+            if (u.Host.Equals("www.cvedup.com", StringComparison.OrdinalIgnoreCase)) return true;
+            if (u.Host.EndsWith(".cvedup.com", StringComparison.OrdinalIgnoreCase)) return true;
+
+            return false;
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
 });
+
+
+//var allowedOrigins = builder.Environment.IsDevelopment()
+//    ? new[] { "http://localhost:3000", "http://localhost:5173" }
+//    : new[] { "https://cvedup.com", "https://www.cvedup.com", "https://*.cvedup.com" };
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("LettingAgency", policy =>
+//    {
+//        policy.WithOrigins(allowedOrigins)
+//              .SetIsOriginAllowedToAllowWildcardSubdomains()
+//              .AllowAnyHeader()
+//              .AllowAnyMethod()
+//              .AllowCredentials();
+//    });
+//});
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();

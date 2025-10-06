@@ -25,7 +25,7 @@ public sealed class OutboxDispatcherWorker(IServiceProvider sp,
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(_opts.Timer));
 
         while (!stoppingToken.IsCancellationRequested && await timer.WaitForNextTickAsync(stoppingToken))
         {
