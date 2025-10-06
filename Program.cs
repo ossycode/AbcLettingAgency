@@ -51,6 +51,10 @@ builder.Services.AddNpgsqlDataSource(
     builder.Configuration.GetConnectionString("DefaultConnection"));
 
 builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
+builder.Services.Configure<AuthCookieOptions>(
+    builder.Configuration.GetSection("AuthCookies"));
+builder.Services.Configure<JwtOptions>(
+    builder.Configuration.GetSection("JwtOptions"));
 
 //EVENTS
 builder.Services.AddScoped<IOutboxWriter, EfOutboxWriter>();
@@ -78,17 +82,17 @@ builder.Services.Scan(s => s
 
 var allowedOrigins = builder.Environment.IsDevelopment()
     ? new[] { "http://localhost:3000", "http://localhost:5173" }
-    : new[] { "https://cvedup.com", "https://*.cvedup.com" };
+    : new[] { "https://cvedup.com", "https://www.cvedup.com", "https://*.cvedup.com" };
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("LettingAgency", policy =>
     {
         policy.WithOrigins(allowedOrigins)
+              .SetIsOriginAllowedToAllowWildcardSubdomains()
               .AllowAnyHeader()
               .AllowAnyMethod()
-              .AllowCredentials()
-              .SetIsOriginAllowedToAllowWildcardSubdomains();
+              .AllowCredentials();
         //if (!builder.Environment.IsDevelopment())
         //    policy.SetIsOriginAllowedToAllowWildcardSubdomains();
     });

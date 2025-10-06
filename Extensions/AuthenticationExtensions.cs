@@ -82,20 +82,6 @@ public static class AuthenticationExtensions
 
                     OnAuthenticationFailed = ctx =>
                     {
-                        //if (c.Exception is SecurityTokenExpiredException)
-                        //{
-                        //    c.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                        //    c.Response.ContentType = "application/json";
-                        //    var result = JsonConvert.SerializeObject("The Token is expire");
-                        //    return c.Response.WriteAsync(result);
-                        //}
-                        //else
-                        //{
-                        //    c.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                        //    c.Response.ContentType = "application/json";
-                        //    var result = JsonConvert.SerializeObject("An unhandled error has occurred.");
-                        //    return c.Response.WriteAsync(result);
-                        //}
                         ctx.NoResult();        
                         return Task.CompletedTask;
                     },
