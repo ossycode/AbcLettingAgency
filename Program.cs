@@ -37,11 +37,14 @@ builder.Services.AddDbContext<AppDbContext>(opts =>
 builder.Services.AddNpgsqlDataSource(
     builder.Configuration.GetConnectionString("DefaultConnection"));
 
-builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
-builder.Services.Configure<AuthCookieOptions>(
-    builder.Configuration.GetSection("AuthCookies"));
-builder.Services.Configure<JwtOptions>(
-    builder.Configuration.GetSection("JwtOptions"));
+var jwtConfig = builder.Services.GetJwtOptionsSettings(builder.Configuration);
+builder.Services.GetAuthCookieOptionsSettings(builder.Configuration);
+builder.Services.GetOutboxOptionsSettings(builder.Configuration);
+//builder.Services.Configure<OutboxOptions>(builder.Configuration.GetSection("Outbox"));
+//builder.Services.Configure<AuthCookieOptions>(
+//    builder.Configuration.GetSection("AuthCookies"));
+//builder.Services.Configure<JwtOptions>(
+//    builder.Configuration.GetSection("JwtOptions"));
 
 builder.Services.AddTransient<ApplicationDbSeeder>();
 builder.Services.AddScoped<IAuthTokenProcessor, AuthTokenProcessor>();
@@ -141,7 +144,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
 builder.Services.RegisterSwagger();
-builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddJwtAuthentication(jwtConfig);
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddProblemDetails();
@@ -154,6 +157,11 @@ builder.Services.AddExceptionHandler<ConcurrencyExceptionHandler>();
 // Fallback last
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+
+builder.Services.PostConfigure<JwtOptions>(o =>
+{
+    Console.WriteLine($"[JwtOptions] Issuer={o.Issuer}, Audience={o.Audience}, ExpirationMinutes={o.ExpirationMinutes} {o.Secret}");
+});
 
 var app = builder.Build();
 

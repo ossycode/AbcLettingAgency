@@ -20,17 +20,17 @@ public static class AuthenticationExtensions
     /// </summary>
     public static IServiceCollection AddJwtAuthentication(
         this IServiceCollection services,
-        IConfiguration configuration)
+        JwtOptions opts)
     {
-        var section = configuration.GetSection(JwtOptions.JwtOptionsKey);
-        var opts = section.Get<JwtOptions>()
-                   ?? throw new InvalidOperationException("Missing JwtOptions section.");
-        if (string.IsNullOrWhiteSpace(opts.Secret))
-            throw new InvalidOperationException("JwtOptions:Secret is missing.");
+        //var section = configuration.GetSection(JwtOptions.JwtOptionsKey);
+        //var opts = section.Get<JwtOptions>()
+        //           ?? throw new InvalidOperationException("Missing JwtOptions section.");
+        //if (string.IsNullOrWhiteSpace(opts.Secret))
+        //    throw new InvalidOperationException("JwtOptions:Secret is missing.");
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(opts.Secret));
 
-        services.Configure<JwtOptions>(section);
+        //services.Configure<JwtOptions>(section);
 
         services
             .AddAuthentication(o =>

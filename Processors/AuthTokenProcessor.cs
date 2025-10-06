@@ -128,7 +128,6 @@ public class AuthTokenProcessor(IOptions<JwtOptions> jwtOptions,
         var opt = new CookieOptions
         {
             Expires = new DateTimeOffset(expiresUtc, TimeSpan.Zero),
-            MaxAge = expiresUtc - DateTime.UtcNow,
             HttpOnly = true,
             IsEssential = true,
             SameSite = sameSite,

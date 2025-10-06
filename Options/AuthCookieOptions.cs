@@ -3,14 +3,14 @@
 public sealed class AuthCookieOptions
 {
     // If frontend and API are on different *sites* (not just subdomains), set true
-    public bool CrossSite { get; init; }
+    public bool CrossSite { get; set; }
 
     // Optional overrides (otherwise inferred from env + CrossSite)
-    public SameSiteMode? SameSiteOverride { get; init; }
-    public bool? SecureOverride { get; init; }
+    public SameSiteMode? SameSiteOverride { get; set; }
+    public bool? SecureOverride { get; set; }
 
     // Optional cookie scope tweaks
-    public string Path { get; init; } = "/";
+    public string Path { get; set; } = string.Empty;
     public string? Domain { get; init; }   
 
     // Names / lifetimes (handy if you want to centralize)
