@@ -80,6 +80,10 @@ public class AuthService(IAuthTokenProcessor authTokenProcessor,
 
         _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("ACCESS_TOKEN", jwtToken, expirationUtc);
         _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("REFRESH_TOKEN", refreshToken, user.RefreshTokenExpiresAtUtc);
+        if(selectedAgencyId != null)
+        {
+            _authTokenProcessor.WriteAuthTokenAsHttpOnlyCookie("AGENCY_TOKEN", agencies[0].Slug, user.RefreshTokenExpiresAtUtc);
+        }
 
         // Optional permissions payload (small sets only)
         var perms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -152,6 +156,7 @@ public class AuthService(IAuthTokenProcessor authTokenProcessor,
 
         _authTokenProcessor.ClearAuthCookie("ACCESS_TOKEN");
         _authTokenProcessor.ClearAuthCookie("REFRESH_TOKEN");
+        _authTokenProcessor.ClearAuthCookie("AGENCY_TOKEN");
         return Result.Success();
     }
 }
